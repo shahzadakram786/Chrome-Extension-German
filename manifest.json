@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "German-Urdu Learner",
+  "version": "1.0",
+  "permissions": ["storage"],
+  "host_permissions": ["https://api.mymemory.translated.net/*"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["style.css"]
+    }
+  ]
+}

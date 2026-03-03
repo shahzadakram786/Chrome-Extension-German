@@ -1,0 +1,31 @@
+#de-ur-tooltip {
+    position: absolute;
+    z-index: 2147483647;
+    background: #121212;
+    color: #ffffff;
+    padding: 15px;
+    border-radius: 12px;
+    font-family: sans-serif;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    display: none;
+    max-width: 280px;
+    border: 1px solid #333;
+    pointer-events: none;
+}
+.word-header {
+    font-weight: bold;
+    color: #ffcc00;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+.trans-en { margin-bottom: 8px; font-size: 1rem; color: #e0e0e0; }
+.trans-ur { 
+    margin-top: 12px; 
+    font-size: 1.4rem; 
+    color: #00ffcc; 
+    text-align: right; 
+    direction: rtl; 
+    line-height: 1.6;
+}

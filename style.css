@@ -1,31 +1,106 @@
+/* 1. MAIN TOOLTIP CONTAINER */
 #de-ur-tooltip {
     position: absolute;
     z-index: 2147483647;
-    background: #121212;
+    background: #1a1a1a;
     color: #ffffff;
     padding: 15px;
     border-radius: 12px;
-    font-family: sans-serif;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    font-family: 'Segoe UI', sans-serif;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    max-width: 300px;
+    border: 1px solid #444;
     display: none;
-    max-width: 280px;
-    border: 1px solid #333;
-    pointer-events: none;
 }
-.word-header {
-    font-weight: bold;
-    color: #ffcc00;
+#uni-translator-tooltip {
+    position: absolute;
+    z-index: 2147483647;
+    background: #1a1a1a;
+    color: #ffffff;
+    padding: 15px;
+    border-radius: 12px;
+    font-family: 'Segoe UI', sans-serif;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    max-width: 300px;
+    border: 1px solid #444;
+    display: none;
+    pointer-events: auto;
+}
+
+#speakBtn:hover {
+    transform: scale(1.2);
+    transition: 0.2s;
+}
+/* 2. HEADER (Noun vs Other) */
+.is-noun { 
+    color: #00e5ff !important; 
     font-size: 1.2rem;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #444;
-    padding-bottom: 5px;
+    font-weight: bold;
+    word-break: break-word;
 }
-.trans-en { margin-bottom: 8px; font-size: 1rem; color: #e0e0e0; }
+
+.is-other { 
+    color: #ffcc00 !important; 
+    font-size: 1.2rem;
+    font-weight: bold;
+    word-break: break-word;
+}
+
+/* 3. TRANSLATION TEXT (English & Urdu) */
+.trans-en { 
+    color: #bbb; 
+    font-size: 0.95rem; 
+    margin-top: 5px;
+    margin-bottom: 8px; 
+}
+
 .trans-ur { 
     margin-top: 12px; 
-    font-size: 1.4rem; 
+    font-size: 1.6rem; /* Large enough for Urdu script */
     color: #00ffcc; 
     text-align: right; 
     direction: rtl; 
-    line-height: 1.6;
+    line-height: 1.8; /* Crucial for Nastaliq/Urdu letters */
+}
+
+/* 4. BUTTONS & LINKS */
+#speakIcon {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    padding: 2px;
+}
+
+#speakIcon:hover {
+    transform: scale(1.3);
+}
+
+#speakIcon:active {
+    transform: scale(0.9);
+}
+
+/* Grammar Link Styling */
+#de-ur-tooltip a {
+    color: #ffcc00;
+    font-size: 11px;
+    text-decoration: none;
+    border: 1px solid #ffcc00;
+    padding: 3px 7px;
+    border-radius: 4px;
+    transition: background 0.2s;
+    display: inline-block;
+}
+
+#de-ur-tooltip a:hover {
+    background: rgba(255, 204, 0, 0.15);
+    color: #ffffff !important;
+}
+
+/* 5. EXTRA HELPERS */
+.example-box {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px dashed #444;
+    font-style: italic;
+    color: #888;
+    font-size: 0.85rem;
 }

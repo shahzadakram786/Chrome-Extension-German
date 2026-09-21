@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — AksLingo</title>
+<meta name="description" content="AksLingo collects nothing. This policy describes exactly what the extension does with your data.">
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #14161a;
+    --fg-2: #52555c;
+    --muted: #6b7280;
+    --border: #e1e4e9;
+    --panel: #f6f7f9;
+    --accent: #059669;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a;
+      --fg: #e8eaed;
+      --fg-2: #b6bcc6;
+      --muted: #8b93a1;
+      --border: #2b3039;
+      --panel: #1b1e24;
+      --accent: #34d399;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161a;
+    --fg: #e8eaed;
+    --fg-2: #b6bcc6;
+    --muted: #8b93a1;
+    --border: #2b3039;
+    --panel: #1b1e24;
+    --accent: #34d399;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 56px 16px 96px; }
+
+  header { border-bottom: 1px solid var(--border); padding-bottom: 22px; margin-bottom: 34px; }
+  h1 { font-size: 30px; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .updated { color: var(--muted); font-size: 14px; margin: 0; }
+
+  h2 {
+    font-size: 21px;
+    margin: 42px 0 12px;
+    letter-spacing: -0.005em;
+    padding-top: 6px;
+  }
+  h3 { font-size: 16.5px; margin: 28px 0 8px; color: var(--fg); }
+  p, li { color: var(--fg-2); }
+  p { margin: 0 0 14px; }
+  ul { margin: 0 0 16px; padding-left: 22px; }
+  li { margin-bottom: 7px; }
+  strong { color: var(--fg); font-weight: 620; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.87em;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+
+  .lede {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin: 0 0 8px;
+  }
+  .lede p:last-child { margin-bottom: 0; }
+
+  .tableWrap { overflow-x: auto; margin: 0 0 18px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--fg-2);
+  }
+  th { color: var(--fg); font-weight: 620; white-space: nowrap; }
+  td:first-child { white-space: nowrap; color: var(--fg); }
+
+  footer {
+    margin-top: 52px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 14px;
+  }
+  footer a { font-weight: 620; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Privacy Policy — AksLingo</h1>
+  <p class="updated">Last updated: 18 September 2026</p>
+</header>
+
+<p>AksLingo is a browser extension that translates words on the pages you read and
+saves them to a personal vocabulary deck. This policy describes exactly what it
+does with your data.</p>
+
+<div class="lede">
+  <p><strong>Short version:</strong> the developer of AksLingo operates no servers,
+  collects nothing, and sees nothing. Your deck stays on your computer. The only
+  data that leaves your machine is the text you explicitly ask to have translated,
+  which goes to the translation service you are using.</p>
+</div>
+
+<h2>What stays on your device</h2>
+
+<p>All of the following is stored locally, in your browser's own extension storage
+(<code>chrome.storage.local</code>). It is never transmitted anywhere:</p>
+
+<ul>
+  <li><strong>Your vocabulary deck</strong> — saved words, their translations, the
+  sentence you found each one in, the page URL you saved it from, and each card's
+  review schedule.</li>
+  <li><strong>Your settings</strong> — language pair, trigger preferences, theme,
+  and the list of sites where you have muted the extension.</li>
+  <li><strong>Your usage statistics</strong> — per-day counts of lookups, saves and
+  reviews, used to draw the progress charts and streak. Kept for roughly a year,
+  then dropped.</li>
+  <li><strong>A translation cache</strong> — recent translations, so repeating a
+  lookup does not repeat the request. Entries expire after 30 days.</li>
+  <li><strong>Your API key</strong>, if you supply one (see below).</li>
+</ul>
+
+<p>None of this is synced, backed up, or sent off the device by the extension.
+Uninstalling the extension deletes all of it.</p>
+
+<h2>What leaves your device</h2>
+
+<p><strong>Only the text you ask to translate.</strong> When you hover a word,
+select a phrase, or turn on immersion mode, that text — and, for accuracy in
+detecting the language, the sentence immediately surrounding a hovered word — is
+sent to a translation service. Nothing else about the page is sent: not its URL,
+not its title, not its other contents, not your identity.</p>
+
+<p>Requests are made without cookies or credentials (<code>credentials: 'omit'</code>),
+so they cannot be tied to any account you may have with these services.</p>
+
+<p>The extension reads the content of pages you visit in order to know what you are
+pointing at. That reading happens entirely inside your browser. Page content is not
+transmitted anywhere except the specific text you ask to translate.</p>
+
+<h3>Which service receives it</h3>
+
+<p>By default, requests go to <strong>Google Translate's public endpoint</strong>,
+falling back to <strong>MyMemory</strong> when the first is unavailable. If you
+supply your own API key in Settings, requests go to <strong>DeepL</strong> or
+<strong>Google Cloud Translation</strong> instead, with the default services
+remaining as a fallback.</p>
+
+<p>These are independent third parties with their own policies:</p>
+
+<ul>
+  <li>Google — <a href="https://policies.google.com/privacy">policies.google.com/privacy</a></li>
+  <li>MyMemory (Translated S.r.l.) — <a href="https://mymemory.translated.net/doc/privacy.php">mymemory.translated.net/doc/privacy.php</a></li>
+  <li>DeepL — <a href="https://www.deepl.com/privacy">deepl.com/privacy</a></li>
+</ul>
+
+<p>Be aware that MyMemory's service is a shared, crowd-sourced translation memory,
+and text sent to it may be retained and used to improve that service. If you read
+pages containing information you consider confidential, mute the extension on those
+sites in Settings, or disable it while you are on them.</p>
+
+<h3>Your API key</h3>
+
+<p>If you supply a DeepL or Google Cloud key, it is stored locally in your browser
+and sent only to that provider, as the credential for your own requests, in an
+<code>Authorization</code> header or that provider's documented key parameter. It is
+never sent to the developer or to any other party. Removing the key in Settings
+deletes it.</p>
+
+<h3>Your contact email</h3>
+
+<p>MyMemory allows a larger daily allowance for requests that include a contact
+address. If — and only if — you enter an email address in Settings, it is included
+in requests to MyMemory for that purpose. It goes nowhere else, and leaving the
+field blank is fully supported.</p>
+
+<h2>What the extension does not do</h2>
+
+<ul>
+  <li>It does not collect, transmit or store personal information.</li>
+  <li>It contains no analytics, telemetry, advertising or tracking of any kind.</li>
+  <li>It does not create an account or identify you.</li>
+  <li>It does not sell or transfer data to third parties.</li>
+  <li>It does not use your data for anything unrelated to translating and reviewing
+  the words you look up.</li>
+  <li>It does not use your data to determine creditworthiness or for lending.</li>
+  <li>It loads no remote code; all code is contained in the published package.</li>
+</ul>
+
+<h2>Permissions, and why each is needed</h2>
+
+<div class="tableWrap">
+<table>
+  <thead><tr><th>Permission</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Access to all websites</td><td>Translation has to work on whatever page you are reading. The extension reads page text locally to find what you are pointing at.</td></tr>
+    <tr><td><code>storage</code></td><td>Keeps your deck, settings and cache on your device.</td></tr>
+    <tr><td><code>contextMenus</code></td><td>Adds the right-click "Translate" and "Save" entries.</td></tr>
+    <tr><td><code>alarms</code></td><td>Refreshes the due-card count on the toolbar badge.</td></tr>
+    <tr><td><code>scripting</code></td><td>Activates the extension in tabs that were already open when you installed it, so it works without a reload.</td></tr>
+    <tr><td><code>activeTab</code></td><td>Lets a keyboard shortcut act on the tab you are looking at.</td></tr>
+    <tr><td>DeepL / Google Cloud access</td><td>Optional. Requested only if you choose one of those providers, and not granted otherwise.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Children</h2>
+
+<p>AksLingo is not directed at children under 13 and collects no data from anyone,
+of any age.</p>
+
+<h2>Changes</h2>
+
+<p>If this policy changes, the updated version will be published at this address and
+the date at the top will change. Material changes will also be noted in the
+extension's listing.</p>
+
+<h2>Contact</h2>
+
+<p>Questions about this policy, or about privacy in AksLingo:</p>
+
+<footer>
+  <a href="mailto:akslingo@gmail.com">akslingo@gmail.com</a>
+</footer>
+
+</div>
+</body>
+</html>

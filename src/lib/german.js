@@ -67,40 +67,58 @@
       praet: ['wurde', 'wurdest', 'wurde', 'wurden', 'wurdet', 'wurden']
     },
 
-    // Modal verbs: no -e in the ich-form, and 1sg equals 3sg.
+    /**
+     * Modal verbs: no -e in the ich-form, and 1sg equals 3sg.
+     *
+     * `modal: true` is not decoration. These are Präteritopräsentia — their
+     * present tense descends from an old strong preterite, which is why the
+     * ich-form has no ending, while the past is formed weakly (konnte, not a
+     * strong ablaut). Calling them strong verbs, which is what happens to any
+     * entry without a flag, is simply wrong, and it is wrong in the one panel
+     * a German teacher will read most closely.
+     *
+     * The flag also drives the Ersatzinfinitiv caveat: a modal governing
+     * another verb takes the infinitive in the perfect, not the Partizip II.
+     */
     koennen: null, // placeholder replaced below (umlaut keys added programmatically)
     müssen: {
-      p2: 'gemusst', pt: 'musst', k2: 'müsst',
+      p2: 'gemusst', pt: 'musst', k2: 'müsst', modal: true,
       praes: ['muss', 'musst', 'muss', 'müssen', 'müsst', 'müssen'],
       praet: ['musste', 'musstest', 'musste', 'mussten', 'musstet', 'mussten']
     },
     können: {
-      p2: 'gekonnt', pt: 'konnt', k2: 'könnt',
+      p2: 'gekonnt', pt: 'konnt', k2: 'könnt', modal: true,
       praes: ['kann', 'kannst', 'kann', 'können', 'könnt', 'können'],
       praet: ['konnte', 'konntest', 'konnte', 'konnten', 'konntet', 'konnten']
     },
     dürfen: {
-      p2: 'gedurft', pt: 'durft', k2: 'dürft',
+      p2: 'gedurft', pt: 'durft', k2: 'dürft', modal: true,
       praes: ['darf', 'darfst', 'darf', 'dürfen', 'dürft', 'dürfen'],
       praet: ['durfte', 'durftest', 'durfte', 'durften', 'durftet', 'durften']
     },
     sollen: {
-      p2: 'gesollt', pt: 'sollt', k2: 'sollt',
+      p2: 'gesollt', pt: 'sollt', k2: 'sollt', modal: true,
       praes: ['soll', 'sollst', 'soll', 'sollen', 'sollt', 'sollen'],
       praet: ['sollte', 'solltest', 'sollte', 'sollten', 'solltet', 'sollten']
     },
     wollen: {
-      p2: 'gewollt', pt: 'wollt', k2: 'wollt',
+      p2: 'gewollt', pt: 'wollt', k2: 'wollt', modal: true,
       praes: ['will', 'willst', 'will', 'wollen', 'wollt', 'wollen'],
       praet: ['wollte', 'wolltest', 'wollte', 'wollten', 'wolltet', 'wollten']
     },
     mögen: {
-      p2: 'gemocht', pt: 'mocht', k2: 'möcht',
+      p2: 'gemocht', pt: 'mocht', k2: 'möcht', modal: true,
       praes: ['mag', 'magst', 'mag', 'mögen', 'mögt', 'mögen'],
       praet: ['mochte', 'mochtest', 'mochte', 'mochten', 'mochtet', 'mochten']
     },
+    /**
+     * wissen is a Präteritopräsens too — hence "weiß" with no ending — but it
+     * is not a modal: it governs a clause, not a bare infinitive, so no
+     * Ersatzinfinitiv. Vowel change plus weak endings is exactly the mixed
+     * pattern (weiß · wusste · gewusst), which is how it is taught.
+     */
     wissen: {
-      p2: 'gewusst', pt: 'wusst', k2: 'wüsst',
+      p2: 'gewusst', pt: 'wusst', k2: 'wüsst', weakPast: true,
       praes: ['weiß', 'weißt', 'weiß', 'wissen', 'wisst', 'wissen'],
       praet: ['wusste', 'wusstest', 'wusste', 'wussten', 'wusstet', 'wussten']
     },
@@ -501,7 +519,12 @@
 
     return {
       infinitive: inf,
-      kind: entry ? (entry.weakPast ? 'mixed' : 'strong') : 'weak',
+      // Order matters: a modal is checked before the weakPast/strong split,
+      // because it is neither — it is a preterite-present, and falling through
+      // to "strong" is how können ended up labelled a strong verb.
+      kind: entry ? (entry.modal ? 'modal' : entry.weakPast ? 'mixed' : 'strong') : 'weak',
+      // Drives the Ersatzinfinitiv caveat on the Perfekt.
+      modal: !!(entry && entry.modal),
       source,
       // True when the irregular list is the generated, comprehensive one, in
       // which case "absent from the list" reliably means "regular".

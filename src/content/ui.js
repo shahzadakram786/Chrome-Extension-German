@@ -323,10 +323,13 @@
 
         const head = el('div', 'gramHead');
         head.appendChild(el('span', 'gramWord', c.infinitive));
-        const bits = [
-          c.kind === 'strong' ? 'strong verb' : c.kind === 'mixed' ? 'mixed verb' : 'weak verb',
-          'Perfekt with ' + c.auxiliary
-        ];
+        const KIND_LABEL = {
+          modal: 'modal verb · preterite-present',
+          strong: 'strong verb',
+          mixed: 'mixed verb',
+          weak: 'weak verb'
+        };
+        const bits = [KIND_LABEL[c.kind] || 'weak verb', 'Perfekt with ' + c.auxiliary];
         if (c.separable) bits.push('separable: ' + c.separable + '-');
         head.appendChild(el('span', 'gramMeta', bits.join(' · ')));
         wrap.appendChild(head);
@@ -373,6 +376,21 @@
           const rows = el('div', 'gramRows');
           c.pronouns.forEach((p, i) => this._row(rows, p, t.forms[i]));
           block.appendChild(rows);
+
+          // "hat gekonnt" is right only when the modal stands alone. Governing
+          // another verb, German takes the infinitive instead — the
+          // Ersatzinfinitiv. Without this the table quietly teaches
+          // "hat schwimmen gekonnt", which is the kind of confident wrong
+          // answer this panel exists to avoid.
+          if (c.modal && (t.key === 'perfekt' || t.key === 'plusquamperfekt')) {
+            block.appendChild(
+              el('div', 'caution',
+                'With another verb, use the infinitive, not ' + c.partizip2 + ': ' +
+                '„er hat schwimmen ' + c.infinitive + '“. ' +
+                'The forms above are for ' + c.infinitive + ' standing on its own.')
+            );
+          }
+
           wrap.appendChild(block);
         });
 

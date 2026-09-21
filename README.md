@@ -43,7 +43,9 @@ inflected form works too: `spricht` is traced back to `sprechen` before the
 table is built.
 
 Nouns get their gender and the four cases; adjectives get Komparativ and
-Superlativ.
+Superlativ. Modals are labelled as modals rather than lumped in with the strong
+verbs, and their Perfekt carries the Ersatzinfinitiv caveat — `hat schwimmen
+können`, not `hat schwimmen gekonnt`.
 
 All of it is computed in the extension, so it is instant and works offline.
 
@@ -103,7 +105,7 @@ PRIVACY.md                       the published privacy policy
 STORE-LISTING.md                 listing copy and permission justifications
 ```
 
-Six decisions worth knowing about:
+Seven decisions worth knowing about:
 
 **Network access lives only in the service worker.** The old version fetched from
 the content script, which meant every request was subject to the visited page's
@@ -144,6 +146,21 @@ never fetches grammar:
   Wiktionary, so the irregular list is derived rather than remembered.
 
 Wiktionary text is CC BY-SA 4.0, recorded in the generated file's header.
+
+**Verb classes are a claim, so they get their own flag.** Until Sept 2026 the
+classifier had three buckets — `weakPast ? 'mixed' : 'strong'`, else `'weak'` —
+and a table entry carrying neither flag fell through to "strong". That made the
+panel call every modal a strong verb. They are not: modals are
+Präteritopräsentia, which is why the ich-form has no ending (it descends from an
+old strong preterite) while the past is formed weakly, `konnte`. Modals now
+carry `modal: true` and are checked before the mixed/strong split. `wissen` has
+the same endingless present but governs a clause rather than a bare infinitive,
+so it is marked mixed — vowel change plus weak endings — and not a modal.
+
+The same flag drives a caveat the table could not otherwise express: `hat
+gekonnt` is right only when the modal stands alone. Governing another verb,
+German takes the Ersatzinfinitiv — `er hat schwimmen können`. Without saying so,
+the Perfekt rows quietly teach `hat schwimmen gekonnt`.
 
 **Why completeness is the safety property.** The engine conjugates anything not
 on the irregular list as a regular verb. That inference is only sound if the
@@ -226,7 +243,7 @@ If it is still silent, in order:
 ```
 node tests/run.js            # 62 unit tests
 node tests/run.js --live     # also calls both translation APIs
-node tests/german.js         # 67 grammar tests
+node tests/german.js         # 71 grammar tests
 node tests/check-wiring.js   # referenced files exist, load order is sound, icons are real PNGs
 node tests/check-worker.js   # the service worker boots and handles every message
 ```

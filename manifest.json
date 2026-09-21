@@ -1,22 +1,73 @@
 {
   "manifest_version": 3,
-  "name": "German-Urdu Learner Pro",
-  "version": "2.0",
-  "permissions": ["storage"],
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": "logo.png"
+  "name": "AksLingo — Immersive Translator & Vocabulary Trainer",
+  "short_name": "AksLingo",
+  "version": "3.0.0",
+  "description": "Hover or select any text to translate it, hear it, and save it to a spaced-repetition deck you actually review.",
+  "permissions": ["storage", "contextMenus", "alarms", "scripting", "activeTab"],
+  "host_permissions": [
+    "https://translate.googleapis.com/*",
+    "https://api.mymemory.translated.net/*",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "optional_host_permissions": [
+    "https://api.deepl.com/*",
+    "https://api-free.deepl.com/*",
+    "https://translation.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "src/background/service-worker.js"
   },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "src/dashboard/dashboard.html",
   "icons": {
-    "16": "logo.png",
-    "48": "logo.png",
-    "128": "logo.png"
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["style.css"]
+      "js": [
+        "src/lib/languages.js",
+        "src/lib/srs.js",
+        "src/lib/grammar.js",
+        "src/lib/german-verbs.js",
+        "src/lib/german.js",
+        "src/lib/store.js",
+        "src/content/styles.js",
+        "src/content/ui.js",
+        "src/content/content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
     }
-  ]
+  ],
+  "commands": {
+    "translate-selection": {
+      "suggested_key": { "default": "Alt+T" },
+      "description": "Translate the current selection"
+    },
+    "toggle-enabled": {
+      "suggested_key": { "default": "Alt+Shift+O" },
+      "description": "Turn AksLingo on or off"
+    },
+    "toggle-immersion": {
+      "suggested_key": { "default": "Alt+Shift+I" },
+      "description": "Immersion mode: show translations under every paragraph"
+    },
+    "open-dashboard": {
+      "description": "Open the review dashboard"
+    }
+  }
 }

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AksLingo</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <header class="chrome">
+    <div class="brand"><span class="mark">◉</span> AksLingo</div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="review">Review <span class="pill" id="tabDue">0</span></button>
+      <button role="tab" data-tab="deck">Deck</button>
+      <button role="tab" data-tab="stats">Progress</button>
+      <button role="tab" data-tab="settings">Settings</button>
+    </nav>
+    <button id="themeToggle" class="ghost" title="Switch theme">◐</button>
+  </header>
+
+  <main>
+    <!-- ================================================== REVIEW ========= -->
+    <section id="panel-review" class="panel" role="tabpanel">
+      <div id="reviewEmpty" class="empty hidden">
+        <div class="emptyMark">☆</div>
+        <h2 id="reviewEmptyTitle">Nothing due right now</h2>
+        <p id="reviewEmptyBody">Hover or select a word on any page and press <kbd>S</kbd> to add it here.</p>
+        <button id="studyAhead" class="btn hidden">Study ahead anyway</button>
+      </div>
+
+      <div id="reviewStage" class="stage hidden">
+        <div class="progress"><div class="progressFill" id="progressFill"></div></div>
+        <div class="stageMeta">
+          <span id="queuePos">1 / 1</span>
+          <span id="cardState" class="tag">learning</span>
+        </div>
+
+        <div class="flash" id="flashCard">
+          <div class="flashRoute" id="flashRoute"></div>
+          <div class="flashTerm" id="flashTerm"></div>
+          <div class="flashPos" id="flashPos"></div>
+          <button id="flashSpeak" class="ghost big" title="Listen">🔊</button>
+
+          <div id="flashBack" class="flashBack hidden">
+            <div class="flashAnswer" id="flashAnswer"></div>
+            <div class="flashSenses" id="flashSenses"></div>
+            <div class="flashContext" id="flashContext"></div>
+            <a class="flashSource" id="flashSource" target="_blank" rel="noreferrer noopener"></a>
+          </div>
+        </div>
+
+        <button id="revealBtn" class="btn primary wide">Show answer <kbd>Space</kbd></button>
+
+        <div id="gradeRow" class="grades hidden">
+          <button data-grade="0" class="grade again"><b>Again</b><span></span><kbd>1</kbd></button>
+          <button data-grade="1" class="grade hard"><b>Hard</b><span></span><kbd>2</kbd></button>
+          <button data-grade="2" class="grade good"><b>Good</b><span></span><kbd>3</kbd></button>
+          <button data-grade="3" class="grade easy"><b>Easy</b><span></span><kbd>4</kbd></button>
+        </div>
+      </div>
+
+      <div id="reviewDone" class="empty hidden">
+        <div class="emptyMark">✓</div>
+        <h2>Session complete</h2>
+        <p id="doneSummary"></p>
+        <button id="doneAgain" class="btn">Review more</button>
+      </div>
+    </section>
+
+    <!-- ==================================================== DECK ========== -->
+    <section id="panel-deck" class="panel hidden" role="tabpanel">
+      <div class="toolbar">
+        <input type="search" id="deckSearch" placeholder="Search words, meanings or context…" aria-label="Search deck">
+        <select id="deckLang" aria-label="Filter by language"><option value="">All languages</option></select>
+        <select id="deckSort" aria-label="Sort">
+          <option value="created">Newest first</option>
+          <option value="due">Due soonest</option>
+          <option value="term">A → Z</option>
+          <option value="lapses">Most troublesome</option>
+        </select>
+        <div class="spacer"></div>
+        <button id="exportCsv" class="btn small">Export CSV</button>
+        <button id="exportJson" class="btn small">Backup</button>
+        <button id="importJson" class="btn small">Restore</button>
+        <input type="file" id="importFile" accept="application/json" hidden>
+      </div>
+
+      <div class="tableWrap">
+        <table class="deck">
+          <thead>
+            <tr>
+              <th class="chk"><input type="checkbox" id="checkAll" aria-label="Select all"></th>
+              <th>Word</th>
+              <th>Meaning</th>
+              <th>Direction</th>
+              <th>Strength</th>
+              <th>Due</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="deckBody"></tbody>
+        </table>
+        <p id="deckEmpty" class="empty small hidden">No cards match.</p>
+      </div>
+
+      <div class="bulkBar hidden" id="bulkBar">
+        <span id="bulkCount">0 selected</span>
+        <button id="bulkSuspend" class="btn small">Suspend</button>
+        <button id="bulkDelete" class="btn small danger">Delete</button>
+      </div>
+    </section>
+
+    <!-- =================================================== STATS ========== -->
+    <section id="panel-stats" class="panel hidden viz-root" role="tabpanel">
+      <div class="tiles">
+        <div class="tile"><b id="tWords">0</b><span>words saved</span></div>
+        <div class="tile"><b id="tStreak">0</b><span>day streak</span></div>
+        <div class="tile"><b id="tMature">0</b><span>known well</span></div>
+        <div class="tile"><b id="tLookups">0</b><span>lookups all time</span></div>
+      </div>
+
+      <figure class="card">
+        <figcaption>
+          <h3>Daily activity</h3>
+          <p>Lookups and reviews per day over the last 26 weeks.</p>
+        </figcaption>
+        <div id="heatmap" class="heatmap"></div>
+        <div class="scale">
+          <span>Less</span>
+          <i class="cell l0"></i><i class="cell l1"></i><i class="cell l2"></i><i class="cell l3"></i><i class="cell l4"></i>
+          <span>More</span>
+        </div>
+      </figure>
+
+      <figure class="card">
+        <figcaption>
+          <h3>Words saved by language</h3>
+          <p>Every card in your deck, counted by the language you are learning.</p>
+        </figcaption>
+        <div id="langBars" class="bars"></div>
+        <details class="tableView">
+          <summary>View as table</summary>
+          <table class="mini"><tbody id="langTable"></tbody></table>
+        </details>
+      </figure>
+
+      <figure class="card">
+        <figcaption>
+          <h3>Deck maturity</h3>
+          <p>How far each card has progressed through the schedule.</p>
+        </figcaption>
+        <div id="maturityBars" class="bars"></div>
+        <details class="tableView">
+          <summary>View as table</summary>
+          <table class="mini"><tbody id="maturityTable"></tbody></table>
+        </details>
+      </figure>
+    </section>
+
+    <!-- ================================================ SETTINGS ========= -->
+    <section id="panel-settings" class="panel hidden" role="tabpanel">
+      <div class="card settings">
+        <h3>Languages</h3>
+        <label class="set"><span>Translate from</span><select id="sSource"></select></label>
+        <label class="set"><span>Translate into</span><select id="sTarget"></select></label>
+
+        <h3>Translation service</h3>
+        <label class="set"><span>Provider</span>
+          <select id="sProvider">
+            <option value="free">Free — built in, no setup</option>
+            <option value="deepl">DeepL — your own key</option>
+            <option value="gcloud">Google Cloud — your own key</option>
+          </select>
+        </label>
+        <p class="note" id="providerNote"></p>
+
+        <div id="keyRow" class="hidden">
+          <label class="set"><span>API key</span>
+            <input type="password" id="sApiKey" autocomplete="off" spellcheck="false" placeholder="Paste your key">
+          </label>
+          <div class="btnRow">
+            <button id="testKey" class="btn small">Test this key</button>
+            <button id="clearKey" class="btn small danger">Remove key</button>
+          </div>
+          <p class="note" id="keyNote"></p>
+        </div>
+
+        <label class="set"><span>Contact email (optional)</span>
+          <input type="email" id="sMymemoryEmail" autocomplete="off" spellcheck="false" placeholder="you@example.com">
+        </label>
+        <p class="note">
+          The free fallback (MyMemory) allows a larger daily allowance when a
+          contact address is sent with the request. It is sent to that service
+          only, and to nothing else.
+        </p>
+
+        <h3>How lookups fire</h3>
+        <label class="set"><span>Trigger</span>
+          <select id="sTrigger">
+            <option value="both">Selection and hover</option>
+            <option value="select">Selection only</option>
+            <option value="hover">Hover only</option>
+            <option value="off">Off</option>
+          </select>
+        </label>
+        <label class="set"><span>Hover delay <i id="sHoverDelayVal"></i></span>
+          <input type="range" id="sHoverDelay" min="150" max="1500" step="50">
+        </label>
+        <label class="set"><span>Require a held key for hover</span>
+          <select id="sHoverModifier">
+            <option value="none">No key needed</option>
+            <option value="alt">Alt</option>
+            <option value="shift">Shift</option>
+            <option value="ctrl">Ctrl / Cmd</option>
+          </select>
+        </label>
+
+        <h3>Tooltip</h3>
+        <label class="set"><span>Theme</span>
+          <select id="sTheme">
+            <option value="auto">Match the system</option>
+            <option value="dark">Always dark</option>
+            <option value="light">Always light</option>
+          </select>
+        </label>
+        <label class="set"><span>Text size <i id="sFontSizeVal"></i></span>
+          <input type="range" id="sFontSize" min="12" max="22" step="1">
+        </label>
+        <label class="set check"><input type="checkbox" id="sShowDictionary"><span>Show other meanings and part of speech</span></label>
+        <label class="set check"><input type="checkbox" id="sShowRomanization"><span>Show romanization for non-Latin scripts</span></label>
+        <label class="set check"><input type="checkbox" id="sShowGrammarHints"><span>Show German article and separable-verb hints</span></label>
+        <label class="set check"><input type="checkbox" id="sSaveContext"><span>Save the surrounding sentence with each card</span></label>
+
+        <h3>Audio</h3>
+        <label class="set check"><input type="checkbox" id="sAutoSpeak"><span>Speak automatically on every lookup</span></label>
+        <label class="set"><span>Speaking rate <i id="sSpeechRateVal"></i></span>
+          <input type="range" id="sSpeechRate" min="0.5" max="1.4" step="0.05">
+        </label>
+
+        <h3>Study</h3>
+        <label class="set"><span>Cards per session <i id="sSessionLimitVal"></i></span>
+          <input type="range" id="sSessionLimit" min="10" max="200" step="10">
+        </label>
+
+        <h3>Sites where AksLingo stays quiet</h3>
+        <textarea id="sBlocklist" rows="4" placeholder="One hostname per line, e.g. mail.google.com"></textarea>
+
+        <h3>Maintenance</h3>
+        <div class="btnRow">
+          <button id="clearCache" class="btn small">Clear translation cache</button>
+          <button id="resetSettings" class="btn small danger">Reset all settings</button>
+        </div>
+        <p class="note">Your deck is never touched by either button.</p>
+
+        <h3>Keyboard</h3>
+        <ul class="shortcuts">
+          <li><kbd>Alt</kbd>+<kbd>T</kbd> translate what is selected</li>
+          <li><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd> immersion mode on the current page</li>
+          <li><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> turn the extension on or off</li>
+          <li>With the tooltip open: <kbd>S</kbd> save · <kbd>P</kbd> play · <kbd>W</kbd> flip direction · <kbd>C</kbd> copy · <kbd>Esc</kbd> close</li>
+        </ul>
+        <p class="note">Change these in <span class="mono">chrome://extensions/shortcuts</span>.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="../lib/languages.js"></script>
+  <script src="../lib/srs.js"></script>
+  <script src="../lib/grammar.js"></script>
+  <script src="../lib/store.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

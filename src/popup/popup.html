@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>AksLingo</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="mark">◉</span>
+      <span>AksLingo</span>
+    </div>
+    <label class="switch" title="Turn the extension on or off">
+      <input type="checkbox" id="enabled">
+      <span class="track"><span class="knob"></span></span>
+    </label>
+  </header>
+
+  <div id="banner" class="banner hidden">
+    <div class="bannerText" id="bannerText"></div>
+    <button id="bannerAction" class="bannerBtn hidden"></button>
+  </div>
+
+  <section class="langs">
+    <div class="field">
+      <label class="cap" for="source">From</label>
+      <select id="source"></select>
+    </div>
+    <button id="swap" class="swap" title="Swap languages" aria-label="Swap languages">⇄</button>
+    <div class="field">
+      <label class="cap" for="target">To</label>
+      <select id="target"></select>
+    </div>
+  </section>
+
+  <section class="block">
+    <span class="cap">Trigger</span>
+    <div class="segmented" id="trigger" role="radiogroup" aria-label="Lookup trigger">
+      <button role="radio" data-value="both">Both</button>
+      <button role="radio" data-value="select">Select</button>
+      <button role="radio" data-value="hover">Hover</button>
+      <button role="radio" data-value="off">Off</button>
+    </div>
+  </section>
+
+  <section class="block row">
+    <div>
+      <div class="rowTitle">Active on this site</div>
+      <div class="rowSub" id="siteHost">—</div>
+    </div>
+    <label class="switch small" title="Allow AksLingo on this site">
+      <input type="checkbox" id="siteEnabled">
+      <span class="track"><span class="knob"></span></span>
+    </label>
+  </section>
+
+  <section class="stats">
+    <div class="stat"><b id="statDue">0</b><span>due</span></div>
+    <div class="stat"><b id="statWords">0</b><span>words</span></div>
+    <div class="stat"><b id="statStreak">0</b><span>day streak</span></div>
+  </section>
+
+  <button id="review" class="cta">Review <span id="reviewCount">0</span> cards</button>
+
+  <nav class="links">
+    <a href="#" data-hash="#deck">My deck</a>
+    <a href="#" data-hash="#stats">Progress</a>
+    <a href="#" data-hash="#settings">Settings</a>
+  </nav>
+
+  <footer class="keys">
+    <span><kbd>Alt</kbd><kbd>T</kbd> translate selection</span>
+    <span><kbd>Alt</kbd><kbd>⇧</kbd><kbd>I</kbd> immersion mode</span>
+  </footer>
+
+  <script src="../lib/languages.js"></script>
+  <script src="../lib/srs.js"></script>
+  <script src="../lib/store.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

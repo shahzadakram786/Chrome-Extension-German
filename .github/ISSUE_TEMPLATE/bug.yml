@@ -1,0 +1,60 @@
+name: Something is broken
+description: The tooltip does not appear, a translation fails, the review screen misbehaves
+title: "Bug: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing: if nothing happens when you hover, open the extension's
+        popup first. It usually names the problem — the tab needs reloading,
+        the extension is switched off, or the site is muted.
+
+        Please do not paste private page content or your API key.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce it
+      description: A public page we can try it on is ideal.
+      placeholder: |
+        1. Open any German news article
+        2. Hover a word
+        3. Nothing appears
+    validations:
+      required: false
+
+  - type: input
+    id: direction
+    attributes:
+      label: Translating from → into
+      placeholder: German → English
+    validations:
+      required: false
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Translation service
+      options:
+        - Free (built in)
+        - DeepL (own key)
+        - Google Cloud (own key)
+        - Not sure
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Extension and Chrome version
+      placeholder: "Extension 3.0.0, Chrome 153"
+    validations:
+      required: false

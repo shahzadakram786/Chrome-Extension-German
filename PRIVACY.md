@@ -78,6 +78,23 @@ address. If — and only if — you enter an email address in Settings, it is
 included in requests to MyMemory for that purpose. It goes nowhere else, and
 leaving the field blank is fully supported.
 
+### Reporting a mistake
+
+The grammar panel and Settings have a button for reporting an error. It does
+not send anything. It opens a prefilled issue form in a new tab, so you read the
+whole report, can edit it, and can close the tab instead of submitting.
+
+What it prefills is the word on screen, what the extension concluded about it
+(its verb class, principal parts, auxiliary) and the extension's version.
+Deliberately excluded: the address of the page you were reading, its title, its
+contents, and the sentence the word came from. Your deck and your API key are
+never included.
+
+If you submit the form, the report becomes a public issue on the project's
+GitHub repository, governed by [GitHub's privacy
+statement](https://docs.github.com/site-policy/privacy-policies/github-privacy-statement).
+You can email instead if you would rather not use GitHub.
+
 ## What the extension does not do
 
 - It does not collect, transmit or store personal information.

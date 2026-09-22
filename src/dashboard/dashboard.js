@@ -902,6 +902,27 @@ function initSettings() {
     }, 600);
   });
 
+  $('reportIssue').addEventListener('click', async () => {
+    // Deliberately carries no deck contents and no page history — only which
+    // way the user is translating, which is what most reports turn out to hinge
+    // on. Everything else they can type themselves.
+    const s = state.settings;
+    await chrome.runtime.sendMessage({
+      type: 'reportIssue',
+      payload: {
+        kind: 'bug',
+        subject: '',
+        details: 'Direction: ' + s.sourceLang + ' → ' + s.targetLang +
+          '\nProvider: ' + (s.provider || 'free')
+      }
+    });
+  });
+
+  $('openRepo').addEventListener('click', () => {
+    const url = chrome.runtime.getManifest().homepage_url;
+    if (url) chrome.tabs.create({ url });
+  });
+
   $('clearCache').addEventListener('click', async () => {
     await chrome.runtime.sendMessage({ type: 'clearCache' });
     toast('Translation cache cleared');

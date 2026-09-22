@@ -101,11 +101,13 @@ tests/
   check-wiring.js                every referenced file exists and loads in order
   check-worker.js                the service worker boots and answers every message
 legacy/                          the original version, kept for reference
+docs/index.html                  the privacy policy as served by GitHub Pages
+.github/ISSUE_TEMPLATE/          what a mistake report asks for
 PRIVACY.md                       the published privacy policy
 STORE-LISTING.md                 listing copy and permission justifications
 ```
 
-Seven decisions worth knowing about:
+Eight decisions worth knowing about:
 
 **Network access lives only in the service worker.** The old version fetched from
 the content script, which meant every request was subject to the visited page's
@@ -146,6 +148,22 @@ never fetches grammar:
   Wiktionary, so the irregular list is derived rather than remembered.
 
 Wiktionary text is CC BY-SA 4.0, recorded in the generated file's header.
+
+**Generated answers need a way to be told they are wrong.** Every form in the
+grammar panel is computed, which means an error is silent by construction: it
+renders exactly like a correct answer, in the same font, with the same
+confidence. Modals were labelled strong verbs from the first build until someone
+looked at a screenshot — nothing in the extension could have surfaced it,
+because nothing asked. So the panel carries a "Report a mistake" link, and
+Settings carries the same button.
+
+It sends nothing. It opens a prefilled issue form in a tab, which means the user
+reads the report before it goes anywhere and can edit or abandon it. The prefill
+is the word, the engine's verdict on it and the version — and deliberately not
+the page URL, its title, or the sentence the word came from, all of which are
+sitting right there in `content.js`. A convenience feature is not a reason to
+make the privacy policy untrue, and `check-worker.js` asserts the report body
+stays clean so a later "just add the URL, it helps debugging" cannot pass.
 
 **Verb classes are a claim, so they get their own flag.** Until Sept 2026 the
 classifier had three buckets — `weakPast ? 'mixed' : 'strong'`, else `'weak'` —

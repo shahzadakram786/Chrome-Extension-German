@@ -254,6 +254,24 @@ footer {
   line-height: 1.4;
 }
 
+/* Reporting a mistake: available on every card, loud on none of them. */
+.gramReport {
+  margin-top: 12px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+  text-align: right;
+}
+.reportLink {
+  all: unset;
+  cursor: pointer;
+  font-size: .72em;
+  color: var(--muted);
+  padding: 3px 5px;
+  border-radius: 5px;
+}
+.reportLink:hover { color: var(--term); background: color-mix(in srgb, var(--term) 12%, transparent); }
+.reportLink:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
 .toast {
   margin-top: 8px;
   padding: 5px 8px;

@@ -306,8 +306,35 @@
       }
 
       this.gramEl = this._renderGrammar(this.grammar);
+      this.gramEl.appendChild(this._reportRow(this.grammar));
       this.body.appendChild(this.gramEl);
       this.reposition();
+    }
+
+    /**
+     * A way for a user to say the panel is wrong.
+     *
+     * Every form here is generated from rules and a stem table, so an error is
+     * silent by construction: it looks exactly like a correct answer. Modals
+     * were labelled "strong verb" from the first release until someone read a
+     * screenshot. Nothing in the extension could have surfaced that, because
+     * nothing asked.
+     *
+     * The report carries what is on screen and nothing else — no page URL, no
+     * surrounding sentence, no page title. It opens a prefilled form in a tab
+     * rather than sending anything, so the user reads the whole report before
+     * it goes anywhere, and can edit or abandon it.
+     */
+    _reportRow(a) {
+      const row = el('div', 'gramReport');
+      const link = el('button', 'reportLink', 'Report a mistake');
+      link.setAttribute('type', 'button');
+      link.title = 'Something wrong on this card? Tell us.';
+      link.addEventListener('click', () => {
+        if (this.h.onReport) this.h.onReport(a);
+      });
+      row.appendChild(link);
+      return row;
     }
 
     _row(container, label, value, strong) {

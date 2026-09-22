@@ -4,6 +4,7 @@
   "short_name": "AksLingo",
   "version": "3.0.0",
   "description": "Hover or select any text to translate it, hear it, and save it to a spaced-repetition deck you actually review.",
+  "homepage_url": "https://github.com/shahzadakram786/Chrome-Extension-German",
   "permissions": ["storage", "contextMenus", "alarms", "scripting", "activeTab"],
   "host_permissions": [
     "https://translate.googleapis.com/*",

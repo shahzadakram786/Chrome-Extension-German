@@ -95,6 +95,7 @@ tools/                           development only, never shipped
   verify-verbs.js                checks the bundled table against Wiktionary
   fetch-verbs.js                 regenerates src/lib/german-verbs.js
   build.js                       packages dist/<name>-<version>.zip for the store
+  frame-screenshots.py           resizes captures to the store's exact dimensions
 tests/
   run.js                         unit tests (add --live to call the real APIs)
   german.js                      every conjugation, against forms written out by hand

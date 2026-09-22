@@ -306,8 +306,35 @@
       }
 
       this.gramEl = this._renderGrammar(this.grammar);
+      this.gramEl.appendChild(this._reportRow(this.grammar));
       this.body.appendChild(this.gramEl);
       this.reposition();
+    }
+
+    /**
+     * A way for a user to say the panel is wrong.
+     *
+     * Every form here is generated from rules and a stem table, so an error is
+     * silent by construction: it looks exactly like a correct answer. Modals
+     * were labelled "strong verb" from the first release until someone read a
+     * screenshot. Nothing in the extension could have surfaced that, because
+     * nothing asked.
+     *
+     * The report carries what is on screen and nothing else — no page URL, no
+     * surrounding sentence, no page title. It opens a prefilled form in a tab
+     * rather than sending anything, so the user reads the whole report before
+     * it goes anywhere, and can edit or abandon it.
+     */
+    _reportRow(a) {
+      const row = el('div', 'gramReport');
+      const link = el('button', 'reportLink', 'Report a mistake');
+      link.setAttribute('type', 'button');
+      link.title = 'Something wrong on this card? Tell us.';
+      link.addEventListener('click', () => {
+        if (this.h.onReport) this.h.onReport(a);
+      });
+      row.appendChild(link);
+      return row;
     }
 
     _row(container, label, value, strong) {
@@ -323,10 +350,13 @@
 
         const head = el('div', 'gramHead');
         head.appendChild(el('span', 'gramWord', c.infinitive));
-        const bits = [
-          c.kind === 'strong' ? 'strong verb' : c.kind === 'mixed' ? 'mixed verb' : 'weak verb',
-          'Perfekt with ' + c.auxiliary
-        ];
+        const KIND_LABEL = {
+          modal: 'modal verb · preterite-present',
+          strong: 'strong verb',
+          mixed: 'mixed verb',
+          weak: 'weak verb'
+        };
+        const bits = [KIND_LABEL[c.kind] || 'weak verb', 'Perfekt with ' + c.auxiliary];
         if (c.separable) bits.push('separable: ' + c.separable + '-');
         head.appendChild(el('span', 'gramMeta', bits.join(' · ')));
         wrap.appendChild(head);
@@ -373,6 +403,21 @@
           const rows = el('div', 'gramRows');
           c.pronouns.forEach((p, i) => this._row(rows, p, t.forms[i]));
           block.appendChild(rows);
+
+          // "hat gekonnt" is right only when the modal stands alone. Governing
+          // another verb, German takes the infinitive instead — the
+          // Ersatzinfinitiv. Without this the table quietly teaches
+          // "hat schwimmen gekonnt", which is the kind of confident wrong
+          // answer this panel exists to avoid.
+          if (c.modal && (t.key === 'perfekt' || t.key === 'plusquamperfekt')) {
+            block.appendChild(
+              el('div', 'caution',
+                'With another verb, use the infinitive, not ' + c.partizip2 + ': ' +
+                '„er hat schwimmen ' + c.infinitive + '“. ' +
+                'The forms above are for ' + c.infinitive + ' standing on its own.')
+            );
+          }
+
           wrap.appendChild(block);
         });
 

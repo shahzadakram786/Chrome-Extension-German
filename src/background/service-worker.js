@@ -596,8 +596,63 @@ const handlers = {
   providerStatus: async () => {
     const s = await GL.store.getSettings();
     return { ok: true, provider: s.provider, hasKey: !!(s.apiKey || '').trim(), keyProblem };
+  },
+  reportIssue: async (msg) => {
+    await openReport(msg.payload || {});
+    return { ok: true };
   }
 };
+
+/* ---------------------------------------------------------------- reports -- */
+
+/**
+ * Opens a prefilled issue form so a user can tell us the extension is wrong.
+ *
+ * Nothing is transmitted from here: this opens a tab on a form the user reads,
+ * edits and submits themselves. That is the point — a silent "send report"
+ * button would contradict a privacy policy that promises nothing leaves the
+ * machine, and would give them no way to see what they were sending.
+ *
+ * The body is assembled from what the caller passes, which is the word and the
+ * engine's verdict on it. Page URLs and page text never reach this function.
+ */
+async function openReport({ kind, subject, details }) {
+  const repo = (chrome.runtime.getManifest().homepage_url || '').replace(/\/+$/, '');
+  const version = chrome.runtime.getManifest().version;
+
+  const body = [
+    '<!-- Thanks for reporting this. Edit anything below before submitting. -->',
+    '',
+    '**What is wrong, and what should it be?**',
+    '',
+    '',
+    '---',
+    '',
+    '_Filled in automatically:_',
+    '',
+    '```',
+    (details || '').trim(),
+    'Extension version: ' + version,
+    '```'
+  ].join('\n');
+
+  const title = (kind === 'grammar' ? 'Grammar: ' : 'Issue: ') + (subject || '').trim();
+
+  // Only title and body: a `labels=` parameter naming a label the repo does not
+  // have is not applied, and `template=` pointing at a missing file lands the
+  // user on an error page. Both are easy to break by renaming something in the
+  // repo months from now, and neither is worth a dead report button.
+  //
+  // No repo configured (a fork, a local build) — fall back to the inbox, which
+  // needs no account either.
+  const url = repo
+    ? repo + '/issues/new?title=' + encodeURIComponent(title) +
+      '&body=' + encodeURIComponent(body)
+    : 'mailto:akslingo@gmail.com?subject=' + encodeURIComponent(title) +
+      '&body=' + encodeURIComponent(body);
+
+  await chrome.tabs.create({ url });
+}
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const handler = msg && handlers[msg.type];

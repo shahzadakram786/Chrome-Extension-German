@@ -147,6 +147,23 @@ A domain is not needed for any of this. The GitHub Pages URL is an acceptable
 privacy policy URL, and both it and the support URL stay editable in the
 dashboard, so buying `akslingo.com` later costs nothing and breaks nothing.
 
+## Support URL
+
+The dashboard has a **Support** field. Point it at the issue tracker:
+
+```
+https://github.com/shahzadakram786/Chrome-Extension-German/issues
+```
+
+This matters more than it looks. Every form in the grammar panel is generated,
+so a wrong answer is indistinguishable from a right one to the user *and* to us
+— modals were labelled "strong verb" from the first build until someone read a
+screenshot. The in-extension "Report a mistake" button feeds this tracker, and
+it is the only channel that will ever tell you the German is wrong. Web Store
+reviews will not: they are one-way and rarely specific.
+
+Watch the repo so issues reach your inbox.
+
 ## Description
 
 ```

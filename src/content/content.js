@@ -236,10 +236,52 @@
           tip.toast('Copy blocked by page');
         }
       },
-      onSave: saveCurrent
+      onSave: saveCurrent,
+      onReport: (grammar) => reportGrammar(grammar)
     });
     tip.applyTheme(settings.theme, settings.fontSize);
     return tip;
+  }
+
+  /**
+   * Builds a bug report for the grammar panel and hands it to the worker to
+   * open.
+   *
+   * What goes in is deliberately narrow: the word, what the engine decided
+   * about it, and the version. The page URL, its title and the sentence the
+   * word came from are all available right here and all deliberately left out —
+   * the privacy policy says page content never leaves the machine, and a
+   * convenience feature is not a reason to make that untrue. A report about
+   * "können" does not need to know you were reading your bank's website.
+   */
+  function reportGrammar(a) {
+    if (!a) return;
+    const lines = [];
+
+    if (a.type === 'verb') {
+      const c = a.conjugation;
+      lines.push('Word shown: ' + (a.word || c.infinitive));
+      lines.push('Infinitive: ' + c.infinitive);
+      lines.push('Classified as: ' + c.kind + (c.modal ? ' (modal)' : ''));
+      lines.push('Principal parts: ' + [c.infinitive, c.tenses[1].forms[2], c.partizip2].join(' · '));
+      lines.push('Perfekt auxiliary: ' + c.auxiliary);
+      if (c.separable) lines.push('Separable prefix: ' + c.separable);
+      lines.push('From: ' + (c.source === 'rules' ? 'regular-verb rules' : 'the irregular table'));
+    } else if (a.type === 'noun') {
+      lines.push('Word shown: ' + a.declension.word);
+      lines.push('Gender given: ' + a.declension.gender);
+    } else if (a.comparison) {
+      lines.push('Word shown: ' + a.comparison.positive);
+      lines.push('Komparativ · Superlativ: ' +
+        a.comparison.comparative + ' · ' + a.comparison.superlative);
+    }
+
+    chrome.runtime
+      .sendMessage({
+        type: 'reportIssue',
+        payload: { kind: 'grammar', subject: lines[0] || 'Grammar', details: lines.join('\n') }
+      })
+      .catch(() => tip && tip.toast('Could not open the report form'));
   }
 
   async function saveCurrent() {

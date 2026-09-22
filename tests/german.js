@@ -243,6 +243,50 @@ check('müssen, dürfen, wollen, mögen, wissen', () => {
   eq(G.conjugate('wissen').partizip2, 'gewusst');
 });
 
+/**
+ * Every modal was reported as a strong verb until Sept 2026, because the
+ * classifier had only weak/mixed/strong and anything with a table entry but no
+ * weakPast flag fell through to strong. They are Präteritopräsentia: the
+ * endingless ich-form comes from an old strong preterite, the past is weak.
+ * The wrong label was showing in the panel a learner reads most carefully.
+ */
+check('every modal is classed as a modal, not as a strong verb', () => {
+  ['können', 'müssen', 'dürfen', 'sollen', 'wollen', 'mögen'].forEach((v) => {
+    const c = G.conjugate(v);
+    eq(c.kind, 'modal', v + ' kind');
+    eq(c.modal, true, v + ' modal flag');
+  });
+});
+
+check('wissen is a preterite-present but not a modal', () => {
+  // Endingless "weiß" like the modals, but it governs a clause rather than a
+  // bare infinitive, so there is no Ersatzinfinitiv to warn about.
+  const c = G.conjugate('wissen');
+  eq(c.kind, 'mixed', 'vowel change plus weak endings is the mixed pattern');
+  eq(c.modal, false, 'not a modal');
+});
+
+check('ordinary verbs keep their classification', () => {
+  // Guards the modal branch against swallowing anything it should not.
+  eq(G.conjugate('sprechen').kind, 'strong');
+  eq(G.conjugate('bringen').kind, 'mixed');
+  eq(G.conjugate('machen').kind, 'weak');
+  eq(G.conjugate('sprechen').modal, false);
+  eq(G.conjugate('machen').modal, false);
+});
+
+check('a modal keeps its standalone Perfekt forms', () => {
+  // "Ich habe das gekonnt" is correct German — the Partizip II is right when
+  // the modal stands alone. The Ersatzinfinitiv caveat is presentation, not a
+  // reason to change the table, so the forms must stay as they are.
+  const c = G.conjugate('können');
+  eq(c.partizip2, 'gekonnt');
+  tense(c, 'perfekt', [
+    'habe gekonnt', 'hast gekonnt', 'hat gekonnt',
+    'haben gekonnt', 'habt gekonnt', 'haben gekonnt'
+  ]);
+});
+
 /* ------------------------------------------------------------- mixed ---- */
 
 section('mixed verbs');

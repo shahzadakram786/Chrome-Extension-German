@@ -59,7 +59,10 @@ const chromeStub = {
     setBadgeBackgroundColor: async () => {}
   },
   tabs: {
-    create: async () => {},
+    created: [],
+    create: async (o) => {
+      chromeStub.tabs.created.push((o && o.url) || '');
+    },
     sendMessage: async () => {},
     // Swapped out below to simulate a build with no wildcard host permission,
     // where filtering a query by URL yields nothing.
@@ -126,7 +129,8 @@ if (!failed) {
     'refreshBadge',
     'clearCache',
     'testKey',
-    'providerStatus'
+    'providerStatus',
+    'reportIssue'
   ];
   const handler = listeners['runtime.onMessage'];
   console.log('\nMessage handlers:');
@@ -193,6 +197,57 @@ if (!failed) {
     } catch (e) {
       failed = true;
       console.log('  fallback threw: ' + e.message);
+    }
+  }
+
+  /**
+   * The report button opens a prefilled form. What it prefills is a privacy
+   * boundary: the content script sits on the page and could trivially add the
+   * URL or the sentence the word came from, and the policy promises page
+   * content never leaves the machine. Pin it here, because that leak is one
+   * convenient line away and would look helpful in review.
+   */
+  const onMessage = listeners['runtime.onMessage'];
+  if (onMessage) {
+    console.log('\nReporting a problem:');
+    chromeStub.tabs.created.length = 0;
+    try {
+      await new Promise((resolve) => {
+        onMessage(
+          {
+            type: 'reportIssue',
+            payload: {
+              kind: 'grammar',
+              subject: 'können',
+              details: 'Word shown: kannst\nInfinitive: können\nClassified as: modal'
+            }
+          },
+          {},
+          resolve
+        );
+      });
+
+      const url = chromeStub.tabs.created[0] || '';
+      const decoded = decodeURIComponent(url);
+      const body = decoded.split('body=')[1] || '';
+
+      // Anything that would mean the page came along for the ride.
+      const LEAKS = ['example.com', 'example.org', 'http://', 'https://ex'];
+
+      [
+        ['opens a tab', !!url],
+        ['goes to the repo issue form', url.indexOf('/issues/new') > -1],
+        ['carries the word', decoded.indexOf('können') > -1],
+        ['carries the version', decoded.indexOf(manifest.version) > -1],
+        ['no labels= or template= to rot', url.indexOf('labels=') === -1 && url.indexOf('template=') === -1],
+        ['no page URL or page text in the body', !LEAKS.some((l) => body.indexOf(l) > -1)]
+      ].forEach(([label, ok]) => {
+        console.log('  ' + (ok ? 'ok    ' : 'MISS  ') + label);
+        if (!ok) failed = true;
+      });
+    } catch (e) {
+      failed = true;
+      console.log('  reportIssue threw: ' + e.message);
     }
   }
 

@@ -233,11 +233,15 @@ both read these as evidence the thing works.
 
 Capture whatever framing looks best — a tight crop around the tooltip shows the
 feature better than a full screen of someone else's website — then fix the size
-afterwards:
+afterwards. Drop the captures in `screenshots/raw/` and run:
 
 ```
-python tools/frame-screenshots.py shot1.png shot2.png shot3.png
+python tools/frame-screenshots.py
 ```
+
+Name them so they sort into the order you want them shown: `01-grammar.png`,
+`02-tooltip.png`, and so on. The store lists screenshots in upload order and
+the first one is the one most people see.
 
 It centres each capture on a 1280×800 canvas painted the colour sampled from
 that capture's own edges, so the padding disappears into the page behind the

@@ -1,13 +1,22 @@
 # AksLingo
 
+**[Install AksLingo from the Chrome Web Store](https://chromewebstore.google.com/detail/akslingo/eiidkincijcjkohchdhbelcdnjbafgli)**
+
 A Chrome extension that turns reading the web into vocabulary practice. Hover or
 select any word to translate it, hear it, and save it to a deck that schedules
-its own reviews.
+its own reviews. For German it also shows the full conjugation — every tense,
+every person, modals and the Ersatzinfinitiv handled correctly — computed
+offline in the extension.
 
 Grew out of a German→Urdu hover translator; now handles 36 languages in both
 directions.
 
 ## Installing it
+
+From the [Chrome Web Store](https://chromewebstore.google.com/detail/akslingo/eiidkincijcjkohchdhbelcdnjbafgli)
+— one click, updates automatically.
+
+To run it from source instead:
 
 1. Open `chrome://extensions`
 2. Turn on **Developer mode** (top right)

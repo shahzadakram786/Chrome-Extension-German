@@ -1,6 +1,6 @@
 # Privacy Policy — AksLingo
 
-_Last updated: 18 September 2026_
+_Last updated: 18 September 2026 · [Get AksLingo on the Chrome Web Store](https://chromewebstore.google.com/detail/akslingo/eiidkincijcjkohchdhbelcdnjbafgli)_
 
 AksLingo is a browser extension that translates words on the pages you read
 and saves them to a personal vocabulary deck. This policy describes exactly what

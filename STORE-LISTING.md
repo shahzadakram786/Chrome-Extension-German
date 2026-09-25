@@ -2,6 +2,14 @@
 
 Copy for the Developer Dashboard. Not shipped in the package.
 
+**Live since 25 September 2026:**
+https://chromewebstore.google.com/detail/akslingo/eiidkincijcjkohchdhbelcdnjbafgli
+
+Extension ID `eiidkincijcjkohchdhbelcdnjbafgli` — 32 characters, as every Chrome
+extension ID is. Worth checking the length before querying it: a one-letter slip
+produces a URL that silently redirects to the store homepage, which looks
+exactly like "still in review".
+
 ---
 
 ## Store icon

@@ -8,6 +8,8 @@ const state = {
   queue: [],
   index: 0,
   revealed: false,
+  grading: false, // a grade is being saved; keys and clicks wait for it
+  shownKey: '', // index:id of the card on screen, so a re-render can tell it is the same one
   session: { again: 0, good: 0, total: 0 },
   selection: new Set()
 };
@@ -110,6 +112,7 @@ function startSession(includeFuture) {
   }
   state.index = 0;
   state.revealed = false;
+  state.shownKey = '';
   state.session = { again: 0, good: 0, total: 0 };
 }
 
@@ -196,7 +199,11 @@ function renderReview() {
     src.classList.add('hidden');
   }
 
-  setRevealed(false);
+  // A word saved in another tab re-renders this page. If that lands while an
+  // answer is showing, the answer stays: only a new card starts face down.
+  const sameCard = state.shownKey === state.index + ':' + card.id;
+  state.shownKey = state.index + ':' + card.id;
+  setRevealed(sameCard && state.revealed);
 
   const preview = GL.srs.intervalPreview(card);
   document.querySelectorAll('.grade').forEach((b) => {
@@ -213,14 +220,23 @@ function setRevealed(on) {
 }
 
 async function grade(value) {
-  if (!state.revealed) return;
+  // Held or double-tapped Space lands here again before the first grade has
+  // finished saving. It used to grade the same card twice and skip the next
+  // one, so every key and click waits until the save is done.
+  if (!state.revealed || state.grading) return;
   const card = state.queue[state.index];
+  if (!card) return;
+  state.grading = true;
   const updated = GL.srs.review(card, value);
 
-  const at = state.deck.findIndex((c) => c.id === card.id);
-  if (at !== -1) state.deck[at] = updated;
-  await GL.store.saveDeck(state.deck);
-  await GL.store.bump('reviews');
+  try {
+    state.deck = await GL.store.updateDeck((cards) =>
+      cards.map((c) => (c.id === card.id ? updated : c))
+    );
+    await GL.store.bump('reviews');
+  } finally {
+    state.grading = false;
+  }
 
   state.session.total += 1;
   if (value === 0) {
@@ -247,7 +263,9 @@ function speakCard() {
 }
 
 function initReview() {
-  $('revealBtn').addEventListener('click', () => setRevealed(true));
+  $('revealBtn').addEventListener('click', () => {
+    if (!state.grading) setRevealed(true);
+  });
   $('flashSpeak').addEventListener('click', speakCard);
   $('studyAhead').addEventListener('click', () => {
     startSession(true);
@@ -268,6 +286,7 @@ function initReview() {
 
     if (e.code === 'Space' || e.key === 'Enter') {
       e.preventDefault();
+      if (state.grading) return;
       if (!state.revealed) setRevealed(true);
       else grade(2);
       return;
@@ -316,18 +335,21 @@ function strengthOf(card) {
 }
 
 function renderDeck() {
+  // Rebuilt every time, so a language saved from another tab shows up and one
+  // whose last card was deleted goes away.
   const langSel = $('deckLang');
-  if (langSel.options.length <= 1) {
-    const seen = Array.from(new Set(state.deck.map((c) => c.source))).sort((a, b) =>
-      GL.langName(a).localeCompare(GL.langName(b))
-    );
-    seen.forEach((code) => {
-      const o = document.createElement('option');
-      o.value = code;
-      o.textContent = GL.langLabel(code);
-      langSel.appendChild(o);
-    });
-  }
+  const picked = langSel.value;
+  const seen = Array.from(new Set(state.deck.map((c) => c.source))).sort((a, b) =>
+    GL.langName(a).localeCompare(GL.langName(b))
+  );
+  while (langSel.options.length > 1) langSel.remove(1);
+  seen.forEach((code) => {
+    const o = document.createElement('option');
+    o.value = code;
+    o.textContent = GL.langLabel(code);
+    langSel.appendChild(o);
+  });
+  langSel.value = seen.includes(picked) ? picked : '';
 
   const rows = visibleCards();
   const body = $('deckBody');
@@ -482,19 +504,26 @@ async function importJson(file) {
   const cards = Array.isArray(data) ? data : data && data.cards;
   if (!Array.isArray(cards)) return toast('No cards found in that file');
 
-  const byKey = new Map(state.deck.map((c) => [c.term.toLowerCase() + '|' + c.target, c]));
+  const keyOf = (c) => c.term.trim().toLowerCase() + '|' + c.target;
   let added = 0;
-  cards.forEach((raw) => {
-    if (!raw || typeof raw.term !== 'string' || !raw.term.trim()) return;
-    const key = raw.term.toLowerCase() + '|' + raw.target;
-    if (byKey.has(key)) return;
-    // Rebuild through newCard so a hand-edited or partial file still lands valid.
-    const card = GL.srs.newCard(raw);
-    byKey.set(key, card);
-    state.deck.push(card);
-    added += 1;
+  state.deck = await GL.store.updateDeck((deck) => {
+    const byKey = new Map(deck.map((c) => [keyOf(c), c]));
+    const ids = new Set(deck.map((c) => c.id));
+    cards.forEach((raw) => {
+      if (!raw || typeof raw.term !== 'string' || !raw.term.trim()) return;
+      // Rebuild through newCard so a hand-edited or partial file still lands valid.
+      const card = GL.srs.newCard(raw);
+      if (byKey.has(keyOf(card))) return;
+      // A backup restored next to a deck that shares its history can carry an
+      // id already in use; two cards with one id would delete together.
+      if (ids.has(card.id)) card.id = GL.srs.newCard({}).id + added;
+      if (!Number.isFinite(card.due)) card.due = Date.now();
+      byKey.set(keyOf(card), card);
+      ids.add(card.id);
+      deck.push(card);
+      added += 1;
+    });
   });
-  await GL.store.saveDeck(state.deck);
   chrome.runtime.sendMessage({ type: 'refreshBadge' });
   renderDeck();
   toast(added ? 'Added ' + added + ' cards' : 'Every card was already in your deck');
@@ -525,13 +554,14 @@ function initDeck() {
 
   $('bulkSuspend').addEventListener('click', async () => {
     let changed = 0;
-    state.deck.forEach((c) => {
-      if (state.selection.has(c.id)) {
-        c.suspended = !c.suspended;
-        changed += 1;
-      }
+    state.deck = await GL.store.updateDeck((deck) => {
+      deck.forEach((c) => {
+        if (state.selection.has(c.id)) {
+          c.suspended = !c.suspended;
+          changed += 1;
+        }
+      });
     });
-    await GL.store.saveDeck(state.deck);
     chrome.runtime.sendMessage({ type: 'refreshBadge' });
     state.selection.clear();
     renderDeck();
@@ -764,14 +794,25 @@ const PROVIDER_NOTES = {
     'by Google, with a free monthly allowance.'
 };
 
+/**
+ * Every saved setting re-renders this page, including the ones saved from it.
+ * The field being typed into is left alone: rewriting it with the cleaned-up
+ * stored value deleted a half-typed line in the block list and moved the cursor.
+ */
+function setField(id, prop, value) {
+  const node = $(id);
+  if (node === document.activeElement && /^(INPUT|TEXTAREA)$/.test(node.tagName)) return;
+  node[prop] = value;
+}
+
 function renderProvider() {
   const s = state.settings;
   const provider = s.provider || 'free';
   $('sProvider').value = provider;
   $('providerNote').textContent = PROVIDER_NOTES[provider] || '';
   $('keyRow').classList.toggle('hidden', provider === 'free');
-  $('sApiKey').value = s.apiKey || '';
-  $('sMymemoryEmail').value = s.mymemoryEmail || '';
+  setField('sApiKey', 'value', s.apiKey || '');
+  setField('sMymemoryEmail', 'value', s.mymemoryEmail || '');
 
   // A key that the worker has since seen rejected is worth surfacing here, or
   // the user is left wondering why the provider they configured never answers.
@@ -863,10 +904,10 @@ function renderSettings() {
   Object.keys(CHECKS).forEach((id) => ($(id).checked = !!s[CHECKS[id]]));
   Object.keys(RANGES).forEach((id) => {
     const cfg = RANGES[id];
-    $(id).value = s[cfg.key];
+    setField(id, 'value', s[cfg.key]);
     $(id + 'Val').textContent = cfg.fmt(s[cfg.key]);
   });
-  $('sBlocklist').value = (s.blocklist || []).join('\n');
+  setField('sBlocklist', 'value', (s.blocklist || []).join('\n'));
   renderProvider();
 }
 
@@ -884,22 +925,29 @@ function initSettings() {
   Object.keys(RANGES).forEach((id) => {
     const cfg = RANGES[id];
     $(id).addEventListener('input', () => {
-      const v = cfg.key === 'speechRate' ? Number($(id).value) : Number($(id).value);
+      const v = Number($(id).value);
       $(id + 'Val').textContent = cfg.fmt(v);
       patch({ [cfg.key]: v });
     });
   });
 
   let blockTimer;
+  const saveBlocklist = () => {
+    clearTimeout(blockTimer);
+    const list = $('sBlocklist')
+      .value.split('\n')
+      .map((l) => l.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/[/:].*$/, ''))
+      .filter(Boolean);
+    return patch({ blocklist: Array.from(new Set(list)) });
+  };
   $('sBlocklist').addEventListener('input', () => {
     clearTimeout(blockTimer);
-    blockTimer = setTimeout(() => {
-      const list = $('sBlocklist')
-        .value.split('\n')
-        .map((l) => l.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, ''))
-        .filter(Boolean);
-      patch({ blocklist: Array.from(new Set(list)) });
-    }, 600);
+    blockTimer = setTimeout(saveBlocklist, 600);
+  });
+  // Leaving the box shows the list as it was saved: "https://x.com/a" as x.com.
+  $('sBlocklist').addEventListener('blur', async () => {
+    await saveBlocklist();
+    $('sBlocklist').value = state.settings.blocklist.join('\n');
   });
 
   $('reportIssue').addEventListener('click', async () => {

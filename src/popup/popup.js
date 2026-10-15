@@ -14,7 +14,7 @@ const ui = {
   statWords: $('statWords'),
   statStreak: $('statStreak'),
   review: $('review'),
-  reviewCount: $('reviewCount')
+  refresh: $('refresh')
 };
 
 let settings = null;
@@ -48,7 +48,10 @@ const hostOf = (url) => {
   }
 };
 
-const blocked = (h, list) => list.some((b) => b && (h === b || h.endsWith('.' + b)));
+const covers = (h, b) => !!b && (h === b || h.endsWith('.' + b));
+const blocked = (h, list) => list.some((b) => covers(h, b));
+
+const webPage = (tab) => /^https?:/.test((tab && tab.url) || '');
 
 /**
  * Chrome injects content scripts when a page loads, so any tab that was already
@@ -56,9 +59,10 @@ const blocked = (h, list) => list.some((b) => b && (h === b || h.endsWith('.' + 
  * — hovering and selecting there does nothing at all, with no visible error.
  * Ping the tab; if nothing answers, say so and offer the reload that fixes it.
  */
-function showBanner(text, actionLabel, onAction) {
+function showBanner(text, actionLabel, onAction, tone) {
   $('bannerText').textContent = text;
   $('banner').classList.remove('hidden');
+  $('banner').classList.toggle('ok', tone === 'ok');
   const btn = $('bannerAction');
   if (actionLabel) {
     btn.textContent = actionLabel;
@@ -69,29 +73,59 @@ function showBanner(text, actionLabel, onAction) {
   }
 }
 
-async function checkTab(tab) {
-  const url = (tab && tab.url) || '';
+const hideBanner = () => $('banner').classList.add('hidden');
 
-  if (!/^https?:/.test(url)) {
+async function ping(tab) {
+  try {
+    return await chrome.tabs.sendMessage(tab.id, { type: 'gl:ping' });
+  } catch (e) {
+    return null; // nothing is listening in that tab
+  }
+}
+
+/**
+ * Starts a fresh copy of AksLingo in the tab without reloading the page, so
+ * nothing the user typed or scrolled to is lost. A copy already running there
+ * hands over to the new one (see the top of content.js), which is also what
+ * clears a tooltip that has got itself stuck.
+ */
+async function startHere(tab) {
+  const files = chrome.runtime.getManifest().content_scripts[0].js;
+  try {
+    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files });
+  } catch (e) {
+    return false; // the web store, PDFs and some Chrome pages refuse scripts
+  }
+  return !!(await ping(tab));
+}
+
+function offerReload(tab, text) {
+  showBanner(text, 'Reload page', () => {
+    chrome.tabs.reload(tab.id);
+    window.close();
+  });
+}
+
+async function checkTab(tab) {
+  if (!webPage(tab)) {
     showBanner('AksLingo only runs on web pages, not on browser or extension pages.');
     return;
   }
 
-  let status = null;
-  try {
-    status = await chrome.tabs.sendMessage(tab.id, { type: 'gl:ping' });
-  } catch (e) {
-    status = null; // nothing is listening in that tab
-  }
+  const status = await ping(tab);
 
   if (!status) {
-    showBanner('Not running on this tab yet — pages open before the extension loaded need a reload.', 'Reload', () => {
-      chrome.tabs.reload(tab.id);
-      window.close();
+    showBanner('Not running on this tab yet — it was open before AksLingo loaded.', 'Start here', async () => {
+      if (await startHere(tab)) {
+        showBanner('AksLingo is running on this tab now.', null, null, 'ok');
+      } else {
+        offerReload(tab, 'Could not start on this page without a reload.');
+      }
     });
     return;
   }
 
+  hideBanner();
   if (status.siteDisabled) {
     showBanner('Turned off for ' + status.host + '. Use the switch below to turn it back on.');
   } else if (!status.enabled) {
@@ -101,55 +135,95 @@ async function checkTab(tab) {
   }
 }
 
-async function load() {
-  fillSelect(ui.source, true);
-  fillSelect(ui.target, false);
+// "Auto-detect" cannot be a target, so there is nothing to swap it with.
+function paintSwap() {
+  ui.swap.disabled = ui.source.value === 'auto';
+  ui.swap.title = ui.swap.disabled ? 'Pick a source language to swap' : 'Swap languages';
+}
 
-  settings = await GL.store.getSettings();
+function paintSettings() {
   ui.enabled.checked = settings.enabled;
   ui.source.value = settings.sourceLang;
   ui.target.value = settings.targetLang;
   paintTrigger(settings.trigger);
-
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  activeTab = tab;
-  host = hostOf((tab && tab.url) || '');
-  const scriptable = host && /^https?:/.test((tab && tab.url) || '');
+  paintSwap();
+  const scriptable = !!host && webPage(activeTab);
   ui.siteHost.textContent = scriptable ? host : 'not available on this page';
   ui.siteEnabled.disabled = !scriptable;
   ui.siteEnabled.checked = scriptable && !blocked(host, settings.blocklist);
+}
 
+async function paintStats() {
   const [deck, stats] = await Promise.all([GL.store.getDeck(), GL.store.getStats()]);
   const counts = GL.srs.counts(deck);
   ui.statDue.textContent = counts.due;
   ui.statWords.textContent = counts.total;
   ui.statStreak.textContent = GL.store.streakOf(stats.days);
-  ui.reviewCount.textContent = counts.due;
 
+  ui.review.classList.toggle('quiet', counts.due === 0);
   if (counts.total === 0) {
     ui.review.textContent = 'Save a word to start a deck';
-    ui.review.classList.add('quiet');
   } else if (counts.due === 0) {
     ui.review.textContent = 'All caught up — browse deck';
-    ui.review.classList.add('quiet');
+  } else {
+    ui.review.textContent = 'Review ' + counts.due + ' card' + (counts.due === 1 ? '' : 's');
   }
+}
+
+async function load() {
+  fillSelect(ui.source, true);
+  fillSelect(ui.target, false);
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  activeTab = tab;
+  host = hostOf((tab && tab.url) || '');
+  ui.refresh.disabled = !webPage(tab);
+
+  settings = await GL.store.getSettings();
+  paintSettings();
+  await paintStats();
 
   checkTab(activeTab);
 }
 
+ui.refresh.addEventListener('click', async () => {
+  if (!webPage(activeTab) || ui.refresh.disabled) return;
+  ui.refresh.disabled = true;
+  ui.refresh.classList.add('spin');
+  const started = await startHere(activeTab);
+  settings = await GL.store.getSettings();
+  paintSettings();
+  await paintStats();
+  ui.refresh.classList.remove('spin');
+  ui.refresh.disabled = false;
+  if (started) {
+    showBanner('Restarted on this tab.', null, null, 'ok');
+    // Then say what still stands in the way, if anything.
+    setTimeout(() => checkTab(activeTab), 1400);
+  } else {
+    offerReload(activeTab, 'Could not restart on this page without a reload.');
+  }
+});
+
 const patch = (p) => GL.store.setSettings(p).then((next) => (settings = next));
 
 ui.enabled.addEventListener('change', () => patch({ enabled: ui.enabled.checked }));
-ui.source.addEventListener('change', () => patch({ sourceLang: ui.source.value }));
+ui.source.addEventListener('change', () => {
+  paintSwap();
+  patch({ sourceLang: ui.source.value });
+});
 ui.target.addEventListener('change', () => patch({ targetLang: ui.target.value }));
 
 ui.swap.addEventListener('click', () => {
   const from = ui.source.value;
   const to = ui.target.value;
-  // "auto" cannot be a target, so swapping out of auto keeps the target as-is.
+  // Swapping out of "auto" used to set both sides to the target language,
+  // which translates nothing. The button is disabled then; this is the backstop.
+  if (from === 'auto') return;
   ui.source.value = to;
-  if (from !== 'auto') ui.target.value = from;
-  patch({ sourceLang: ui.source.value, targetLang: ui.target.value });
+  ui.target.value = from;
+  paintSwap();
+  patch({ sourceLang: to, targetLang: from });
 });
 
 ui.trigger.addEventListener('click', (e) => {
@@ -161,9 +235,13 @@ ui.trigger.addEventListener('click', (e) => {
 
 ui.siteEnabled.addEventListener('change', async () => {
   if (!host) return;
-  const list = settings.blocklist.filter((b) => b !== host);
+  // Turning a site back on clears every entry that covers it. Removing only
+  // the exact host left "example.com" blocking www.example.com, so the switch
+  // showed on while the site stayed off.
+  const list = settings.blocklist.filter((b) => !covers(host, b));
   if (!ui.siteEnabled.checked) list.push(host);
   await patch({ blocklist: list });
+  checkTab(activeTab);
 });
 
 ui.review.addEventListener('click', () => {

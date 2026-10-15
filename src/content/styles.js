@@ -158,6 +158,15 @@ footer {
 .badge { opacity: .55; }
 
 .error { color: var(--danger); font-size: .86em; }
+.retryLink {
+  margin-top: 8px;
+  width: auto; height: auto;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: .8em;
+  color: var(--fg);
+}
 
 /* ------------------------------------------------------------- grammar -- */
 

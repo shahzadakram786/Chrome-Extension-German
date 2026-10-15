@@ -123,8 +123,8 @@ kbd {
   border-bottom: 1px solid var(--border);
 }
 
-.brand { font-weight: 650; letter-spacing: -0.01em; white-space: nowrap; }
-.mark { color: var(--accent); }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 650; letter-spacing: -0.01em; white-space: nowrap; }
+.mark { width: 22px; height: 22px; border-radius: 5px; display: block; }
 
 .tabs { display: flex; gap: 2px; }
 .tabs button {

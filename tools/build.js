@@ -288,7 +288,7 @@ function main() {
   console.log('  ' + '—'.repeat(46));
   console.log('  ' + 'uncompressed'.padEnd(36) + kb(total).padStart(10));
 
-  const skipped = ['legacy/', 'tests/', 'tools/', 'README.md', 'PRIVACY.md', 'logo.png'];
+  const skipped = ['legacy/', 'tests/', 'tools/', 'README.md', 'PRIVACY.md', 'logo.png', 'logo.svg'];
   console.log('\nLeft out: ' + skipped.join('  '));
 
   if (DRY) {

@@ -220,7 +220,7 @@ KEYBOARD
 Alt+T          translate the selection
 Alt+Shift+I    immersion mode on this page
 Alt+Shift+O    turn AksLingo on or off
-With the tooltip open: S save · P play · G grammar · W flip · C copy · Esc close
+With the tooltip open: S save · P play · G grammar · W flip · R translate again · C copy · Esc close
 While reviewing: Space to reveal, then 1-4 to grade
 ```
 
@@ -263,7 +263,7 @@ blurry text in a listing reads as a low-effort extension. Output lands in
 - [ ] Host the policy and have the URL ready
 - [ ] Capture screenshots
 - [ ] Smoke test the unpacked build in Chrome (see README, "Before submitting")
-- [ ] `node tools/build.js`, upload `dist/akslingo-3.0.0.zip`
+- [ ] `node tools/build.js`, upload `dist/akslingo-3.1.0.zip`
 
 Expect extended review because of the all-sites host permission. Plan for
 several weeks, not days, and don't schedule anything around the launch date.

@@ -3,10 +3,37 @@
  * to translate it, and drive the tooltip. Deliberately holds no network code.
  */
 (function () {
-  if (window.__aksLingoLoaded) return;
-  window.__aksLingoLoaded = true;
+  /*
+   * An update leaves the copy of this script that was already in each open tab
+   * still running, but cut off from the extension. The worker injects a fresh
+   * copy beside it, and from then on every hover showed two tooltips: the new
+   * copy's translation and the old copy's "Extension reloading — try again".
+   *
+   * So the newest copy takes over. It tells older copies to shut themselves
+   * down, and a copy that finds itself cut off does the same at the next mouse
+   * or key event. Copies from before this existed (3.0.0) cannot be told, so
+   * their tooltip is removed from the page instead; see `strays` below.
+   */
+  const RETIRE = 'akslingo:retire';
+  document.dispatchEvent(new CustomEvent(RETIRE));
 
   const GL = globalThis.GL;
+
+  let retired = false;
+  const undo = []; // takes back each listener, for retire()
+
+  function on(target, type, fn, opts) {
+    target.addEventListener(type, fn, opts);
+    undo.push(() => target.removeEventListener(type, fn, opts));
+  }
+
+  const connected = () => {
+    try {
+      return !!(chrome.runtime && chrome.runtime.id);
+    } catch (e) {
+      return false;
+    }
+  };
 
   let settings = Object.assign({}, GL.store.DEFAULTS);
   let siteDisabled = false;
@@ -29,11 +56,13 @@
   }
 
   GL.store.getSettings().then(applySettings);
-  chrome.storage.onChanged.addListener((changes, area) => {
+  const onStorage = (changes, area) => {
     if (area === 'local' && changes[GL.store.KEYS.settings]) {
       GL.store.getSettings().then(applySettings);
     }
-  });
+  };
+  chrome.storage.onChanged.addListener(onStorage);
+  undo.push(() => chrome.storage.onChanged.removeListener(onStorage));
 
   const active = () => settings.enabled && !siteDisabled && settings.trigger !== 'off';
 
@@ -184,7 +213,7 @@
     }
   };
   loadVoices();
-  if (window.speechSynthesis) window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+  if (window.speechSynthesis) on(window.speechSynthesis, 'voiceschanged', loadVoices);
 
   function pickVoice(tag) {
     if (!tag || !voices.length) return null;
@@ -237,6 +266,7 @@
         }
       },
       onSave: saveCurrent,
+      onRetry: retryLookup,
       onReport: (grammar) => reportGrammar(grammar)
     });
     tip.applyTheme(settings.theme, settings.fontSize);
@@ -307,12 +337,14 @@
 
   async function runLookup(term, rect, opts) {
     opts = opts || {};
+    if (!connected()) return retire();
     const target = opts.target || settings.targetLang;
     const t = tooltip();
     const token = ++lookupToken;
     const sentence = sentenceAround(opts.node, opts.start);
 
     last = {
+      opts,
       term,
       source: opts.source || settings.sourceLang,
       target,
@@ -336,11 +368,13 @@
     try {
       res = await chrome.runtime.sendMessage({
         type: 'translate',
-        payload: { text: term, source, target, rich: term.length <= 40 }
+        payload: { text: term, source, target, rich: term.length <= 40, fresh: !!opts.fresh }
       });
     } catch (e) {
-      // Worker restarted mid-flight, or the extension was reloaded.
-      res = { ok: false, error: 'Extension reloading — try again' };
+      // The extension was updated or switched off while this was in flight,
+      // and this copy is now cut off from it: hand over quietly.
+      if (!connected()) return retire();
+      res = { ok: false, error: 'Translation service did not answer — press ↻ to try again' };
     }
 
     if (token !== lookupToken || !t.visible) return; // a newer lookup won
@@ -361,6 +395,17 @@
     });
 
     if (settings.autoSpeak) speak(term, res.detected || source, false);
+  }
+
+  /**
+   * The tooltip's ↻: asks again, past the cache. For a lookup that failed, and
+   * for a translation that came back wrong and would otherwise be replayed from
+   * the cache for the next 30 days.
+   */
+  function retryLookup() {
+    if (!last || !tip || !tip.visible) return;
+    const opts = Object.assign({}, last.opts, { fresh: true });
+    runLookup(last.term, last.anchorRect, opts);
   }
 
   /* ------------------------------------------------------------ triggers -- */
@@ -391,9 +436,11 @@
     return true;
   }
 
-  document.addEventListener(
+  on(
+    document,
     'mouseup',
     (e) => {
+      if (!connected()) return retire();
       if (!active() || settings.trigger === 'hover') return;
       if (tip && tip.containsEvent(e)) return;
       // Let the browser finish updating the selection first.
@@ -402,7 +449,8 @@
     true
   );
 
-  document.addEventListener('mousemove', (e) => {
+  on(document, 'mousemove', (e) => {
+    if (!connected()) return retire();
     if (!active() || settings.trigger === 'select') return;
     if (tip && tip.containsEvent(e)) return;
     clearTimeout(hoverTimer);
@@ -425,7 +473,8 @@
     }, settings.hoverDelay);
   });
 
-  document.addEventListener(
+  on(
+    document,
     'mousedown',
     (e) => {
       if (tip && tip.visible && !tip.containsEvent(e)) tip.hide();
@@ -433,8 +482,9 @@
     true
   );
 
-  document.addEventListener('keydown', (e) => {
+  on(document, 'keydown', (e) => {
     if (!tip || !tip.visible) return;
+    if (!connected()) return retire();
     if (e.key === 'Escape') {
       tip.hide();
       return;
@@ -457,11 +507,15 @@
     } else if (k === 'g') {
       e.preventDefault();
       tip.toggleGrammar();
+    } else if (k === 'r') {
+      e.preventDefault();
+      retryLookup();
     }
   });
 
   let scrollRaf = null;
-  window.addEventListener(
+  on(
+    window,
     'scroll',
     (e) => {
       // The grammar panel scrolls inside the tooltip; that is not the page
@@ -477,7 +531,7 @@
     true
   );
 
-  window.addEventListener('resize', () => tip && tip.reposition());
+  on(window, 'resize', () => tip && tip.reposition());
 
   /* ------------------------------------------------------ immersion mode -- */
 
@@ -492,6 +546,7 @@
   };
 
   const BLOCK_SELECTOR = 'p, li, blockquote, h1, h2, h3, h4, dd, figcaption, td';
+  const INSIDE = /^(TD|LI|DD)$/;
 
   function injectImmersionStyle() {
     if (immersion.styled) return;
@@ -547,7 +602,10 @@
       line.className = 'gl-immersion-line';
       line.textContent = text;
       if (rtl) line.setAttribute('dir', 'rtl');
-      node.insertAdjacentElement('afterend', line);
+      // A line placed after a table cell becomes a cell of its own and pushes
+      // the rest of the row out of its columns; list items and definitions
+      // likewise only take block children inside them. So those get it inside.
+      node.insertAdjacentElement(INSIDE.test(node.tagName) ? 'beforeend' : 'afterend', line);
     });
 
     if (immersion.queue.length) {
@@ -610,7 +668,7 @@
 
   /* ----------------------------------------------------- worker messages -- */
 
-  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  function onMessage(msg, sender, sendResponse) {
     switch (msg && msg.type) {
       // The popup pings to find out whether this tab has a live content script.
       // A tab that was already open when the extension loaded has none, and the
@@ -665,5 +723,49 @@
     }
     sendResponse({ ok: true });
     return false;
+  }
+  chrome.runtime.onMessage.addListener(onMessage);
+  undo.push(() => chrome.runtime.onMessage.removeListener(onMessage));
+
+  /* -------------------------------------------------------------- handover -- */
+
+  /**
+   * Copies from 3.0.0 predate the retire signal and go on reacting to the
+   * mouse after an update, each lookup ending in an error tooltip. Their
+   * tooltip element is the only part of them a user can see, so it is removed
+   * on sight. Ours is created lazily and assigned before this ever runs.
+   */
+  document.querySelectorAll('aks-lingo').forEach((n) => n.remove());
+  const strays = new MutationObserver((records) => {
+    records.forEach((r) =>
+      r.addedNodes.forEach((n) => {
+        if (n.nodeName === 'AKS-LINGO' && !(tip && n === tip.host)) n.remove();
+      })
+    );
   });
+  strays.observe(document.documentElement, { childList: true });
+
+  /** Takes this copy off the page entirely, so a newer one can run alone. */
+  function retire() {
+    if (retired) return;
+    retired = true;
+    undo.forEach((fn) => {
+      try {
+        fn();
+      } catch (e) {
+        /* the extension API may already be gone */
+      }
+    });
+    strays.disconnect();
+    clearTimeout(hoverTimer);
+    lookupToken += 1; // any lookup still in flight is now stale
+    if (immersion.observer) immersion.observer.disconnect();
+    immersion.on = false;
+    clearTimeout(immersion.flushTimer);
+    document.querySelectorAll('.gl-immersion-line, #gl-immersion-style').forEach((n) => n.remove());
+    if (tip) tip.destroy();
+    if (flashEl) flashEl.remove();
+  }
+
+  on(document, RETIRE, retire);
 })();

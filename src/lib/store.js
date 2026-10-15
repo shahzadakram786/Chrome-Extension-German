@@ -50,16 +50,32 @@
     );
   };
 
+  /**
+   * Every write below reads the current value, changes it and writes it back.
+   * Two of those overlapping in one context both read the same starting value
+   * and the later write erases the earlier one: a page translated in parallel
+   * batches recorded one lookup in five, and two words saved together kept
+   * one. Running them one after another closes that window.
+   */
+  let writes = Promise.resolve();
+  function serial(fn) {
+    const run = writes.then(fn);
+    writes = run.catch(() => {});
+    return run;
+  }
+
   async function getSettings() {
     const res = await chrome.storage.local.get(KEYS.settings);
     return Object.assign({}, DEFAULTS, res[KEYS.settings] || {});
   }
 
-  async function setSettings(patch) {
-    const current = await getSettings();
-    const next = Object.assign({}, current, patch);
-    await chrome.storage.local.set({ [KEYS.settings]: next });
-    return next;
+  function setSettings(patch) {
+    return serial(async () => {
+      const current = await getSettings();
+      const next = Object.assign({}, current, patch);
+      await chrome.storage.local.set({ [KEYS.settings]: next });
+      return next;
+    });
   }
 
   async function getDeck() {
@@ -79,7 +95,11 @@
    * which case the existing card is enriched but its schedule is left alone —
    * re-saving a word you are already learning must not reset your progress.
    */
-  async function addCard(fields) {
+  function addCard(fields) {
+    return serial(() => addCardNow(fields));
+  }
+
+  async function addCardNow(fields) {
     const deck = await getDeck();
     const key = normTerm(fields.term);
     const existing = deck.find(
@@ -95,16 +115,30 @@
     const card = globalThis.GL.srs.newCard(fields);
     deck.push(card);
     await saveDeck(deck);
-    await bump('saves');
+    await bumpNow('saves');
     return { card, added: true, total: deck.length };
   }
 
-  async function removeCards(ids) {
+  function removeCards(ids) {
     const set = new Set(ids);
-    const deck = await getDeck();
-    const kept = deck.filter((c) => !set.has(c.id));
-    await saveDeck(kept);
-    return kept;
+    return updateDeck((deck) => deck.filter((c) => !set.has(c.id)));
+  }
+
+  /**
+   * Changes the deck as it is in storage now, not as some page loaded it a
+   * while ago. A review page that saved its own copy would delete any word
+   * saved from another tab since it opened.
+   *
+   * @param {(cards: object[]) => object[]|void} change  returns the new deck,
+   *        or edits the array in place and returns nothing
+   */
+  function updateDeck(change) {
+    return serial(async () => {
+      const deck = await getDeck();
+      const next = change(deck) || deck;
+      await saveDeck(next);
+      return next;
+    });
   }
 
   async function getStats() {
@@ -114,7 +148,11 @@
   }
 
   /** Increments today's counter for `kind` (lookups | saves | reviews). */
-  async function bump(kind, n) {
+  function bump(kind, n) {
+    return serial(() => bumpNow(kind, n));
+  }
+
+  async function bumpNow(kind, n) {
     const stats = await getStats();
     const key = today();
     const day = stats.days[key] || { lookups: 0, saves: 0, reviews: 0 };
@@ -158,6 +196,7 @@
       saveDeck,
       addCard,
       removeCards,
+      updateDeck,
       getStats,
       bump,
       streakOf

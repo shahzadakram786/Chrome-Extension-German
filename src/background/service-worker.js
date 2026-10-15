@@ -294,7 +294,7 @@ function breakerHit(name, ok, status) {
 
 const inflight = new Map(); // key -> Promise, so N tabs asking at once make one request
 
-async function translate({ text, source, target, rich }) {
+async function translate({ text, source, target, rich, fresh }) {
   text = (text || '').trim();
   if (!text) return { ok: false, error: 'No text' };
   if (source === target && source !== 'auto') {
@@ -309,8 +309,11 @@ async function translate({ text, source, target, rich }) {
     (rich ? '|r' : '') +
     '|' +
     (settingsForKey.provider || 'free');
-  const cached = await cacheGet(key);
+  // `fresh` is the tooltip's ↻: the user has seen the cached answer and wants
+  // another, so skip the cache and try every provider, even one resting.
+  const cached = fresh ? null : await cacheGet(key);
   if (cached) return Object.assign({ ok: true, cached: true }, cached);
+  const resting = (name) => !fresh && breakerOpen(name);
 
   if (inflight.has(key)) return inflight.get(key);
 
@@ -323,7 +326,7 @@ async function translate({ text, source, target, rich }) {
     // scale, and the whole reason they configured it. The free chain stays
     // underneath so a bad key or an exhausted quota degrades instead of failing.
     const keyed = keyedProvider(settings, source, target);
-    if (keyed && !breakerOpen('byo')) {
+    if (keyed && !resting('byo')) {
       try {
         result = await withRetry(() => keyed.run(text), 2);
         breakerHit('byo', true);
@@ -335,7 +338,7 @@ async function translate({ text, source, target, rich }) {
       }
     }
 
-    if (!result && !breakerOpen('google')) {
+    if (!result && !resting('google')) {
       try {
         result = await withRetry(() => providerGoogle(text, source, target, rich));
         breakerHit('google', true);
@@ -345,7 +348,7 @@ async function translate({ text, source, target, rich }) {
       }
     }
 
-    if (!result && !breakerOpen('mymemory')) {
+    if (!result && !resting('mymemory')) {
       try {
         result = await withRetry(
           () => providerMyMemory(text, source, target, settings.mymemoryEmail),
@@ -719,7 +722,15 @@ chrome.runtime.onStartup.addListener(() => {
   refreshBadge();
 });
 
-chrome.alarms.create('gl-badge', { periodInMinutes: 30 });
+// This file runs every time Chrome wakes the worker, and create() on an
+// existing name restarts its countdown. Created unconditionally, the alarm was
+// reset by every lookup and never fired during a browsing session, so the
+// badge missed cards that fell due. Make it once; refresh on each wake too.
+chrome.alarms.get('gl-badge').then((existing) => {
+  if (!existing) chrome.alarms.create('gl-badge', { periodInMinutes: 30 });
+});
+refreshBadge();
+
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'gl-badge') refreshBadge();
 });

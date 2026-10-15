@@ -51,7 +51,12 @@ const chromeStub = {
   },
   commands: { onCommand: evented('commands.onCommand') },
   alarms: {
-    create: (n) => calls.push('alarm ' + n),
+    existing: new Set(),
+    get: async (n) => (chromeStub.alarms.existing.has(n) ? { name: n } : undefined),
+    create: (n) => {
+      chromeStub.alarms.existing.add(n);
+      calls.push('alarm ' + n);
+    },
     onAlarm: evented('alarms.onAlarm')
   },
   action: {
@@ -160,6 +165,38 @@ if (!failed) {
 }
 
 (async () => {
+  /**
+   * The worker file runs again every time Chrome wakes the worker, which
+   * during a browsing session is far more often than every 30 minutes.
+   * alarms.create() on an existing name restarts its countdown, so creating
+   * the badge alarm unconditionally on each wake meant it never fired, and the
+   * badge missed every card that fell due mid-session.
+   */
+  if (!failed) {
+    console.log('\nWaking the worker a second time:');
+    await new Promise((r) => setTimeout(r, 0));
+    const wake = Object.assign({}, sandbox);
+    wake.globalThis = wake;
+    wake.self = wake;
+    wake.importScripts = (...files) =>
+      files.forEach((f) => {
+        const rel = String(f).replace(/^\//, '');
+        vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), wake, { filename: rel });
+      });
+    vm.createContext(wake);
+    try {
+      vm.runInContext(fs.readFileSync(path.join(ROOT, WORKER), 'utf8'), wake, { filename: WORKER });
+      await new Promise((r) => setTimeout(r, 0));
+      const made = calls.filter((c) => c === 'alarm gl-badge').length;
+      const ok = made === 1;
+      console.log('  ' + (ok ? 'ok    ' : 'MISS  ') + 'keeps the running badge alarm (created ' + made + 'x)');
+      if (!ok) failed = true;
+    } catch (e) {
+      failed = true;
+      console.log('  second wake threw: ' + e.message);
+    }
+  }
+
   const onInstalled = listeners['runtime.onInstalled'];
   if (onInstalled) {
     console.log('\nRunning the install handler:');

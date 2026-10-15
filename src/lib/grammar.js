@@ -5,6 +5,8 @@
  */
 (function () {
   // German noun endings whose gender is effectively exceptionless in practice.
+  // Sorted longest first: several contain a shorter ending of another gender
+  // (-ling/-ing, -eur/-ur), and the first match wins.
   const DE_SUFFIX_GENDER = [
     ['heit', 'die'], ['keit', 'die'], ['schaft', 'die'], ['ung', 'die'],
     ['tion', 'die'], ['sion', 'die'], ['tät', 'die'], ['ität', 'die'],
@@ -13,7 +15,7 @@
     ['um', 'das'], ['ing', 'das'], ['nis', 'das'],
     ['ling', 'der'], ['ismus', 'der'], ['ant', 'der'], ['ent', 'der'],
     ['ist', 'der'], ['or', 'der'], ['eur', 'der'], ['ich', 'der'], ['ig', 'der']
-  ];
+  ].sort((a, b) => b[0].length - a[0].length);
 
   const DE_SEPARABLE_PREFIXES = [
     'ab', 'an', 'auf', 'aus', 'bei', 'ein', 'fest', 'her', 'hin', 'los',

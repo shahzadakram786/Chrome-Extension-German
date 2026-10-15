@@ -49,9 +49,10 @@
       this.btnGrammar.style.display = 'none'; // shown only when there is a table
       this.btnSave = this._button('☆', 'Save to deck (S)', () => this.h.onSave && this.h.onSave());
       this.btnSwap = this._button('⇄', 'Translate the other way (W)', () => this.h.onSwap && this.h.onSwap());
+      this.btnRetry = this._button(this._refreshIcon(), 'Translate again, fresh (R)', () => this.h.onRetry && this.h.onRetry());
       this.btnCopy = this._button('⧉', 'Copy translation (C)', () => this.h.onCopy && this.h.onCopy());
       this.btnClose = this._button('✕', 'Close (Esc)', () => this.hide());
-      [this.btnSpeak, this.btnGrammar, this.btnSave, this.btnSwap, this.btnCopy, this.btnClose].forEach(
+      [this.btnSpeak, this.btnGrammar, this.btnSave, this.btnSwap, this.btnRetry, this.btnCopy, this.btnClose].forEach(
         (b) => acts.appendChild(b)
       );
       header.appendChild(acts);
@@ -123,6 +124,27 @@
       return svg;
     }
 
+    /** A circular arrow, drawn so it matches the popup's restart button. */
+    _refreshIcon() {
+      const NS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('viewBox', '0 0 16 16');
+      svg.setAttribute('width', '14');
+      svg.setAttribute('height', '14');
+      svg.setAttribute('aria-hidden', 'true');
+      ['M13.5 8a5.5 5.5 0 1 1-1.61-3.89', 'M12.6 1.6v3.1H9.5'].forEach((d) => {
+        const path = document.createElementNS(NS, 'path');
+        path.setAttribute('d', d);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', 'currentColor');
+        path.setAttribute('stroke-width', '1.6');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        svg.appendChild(path);
+      });
+      return svg;
+    }
+
     _button(glyph, title, onClick) {
       const b = el('button', null, typeof glyph === 'string' ? glyph : null);
       if (typeof glyph !== 'string') b.appendChild(glyph);
@@ -159,7 +181,7 @@
       this.btnGrammar.style.display = 'none';
       this.btnGrammar.classList.remove('on');
       this.card.classList.remove('wide');
-      [this.btnSave, this.btnCopy, this.btnSwap].forEach((b) => (b.disabled = true));
+      [this.btnSave, this.btnCopy, this.btnSwap, this.btnRetry].forEach((b) => (b.disabled = true));
 
       this._clearBody();
       const sk = el('div', 'skeleton');
@@ -175,7 +197,16 @@
 
     setError(message) {
       this._clearBody();
+      this.btnRetry.disabled = false;
       this.body.appendChild(el('div', 'error', '⚠ ' + message));
+      const again = el('button', 'retryLink', 'Try again');
+      again.setAttribute('type', 'button');
+      again.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.h.onRetry) this.h.onRetry();
+      });
+      this.body.appendChild(again);
+      this.reposition();
     }
 
     /**
@@ -184,7 +215,7 @@
      */
     setResult(data, opts) {
       this._clearBody();
-      [this.btnSave, this.btnCopy, this.btnSwap].forEach((b) => (b.disabled = false));
+      [this.btnSave, this.btnCopy, this.btnSwap, this.btnRetry].forEach((b) => (b.disabled = false));
 
       const detected = data.detected || opts.sourceLang;
       this._setTerm(this.termEl.textContent, detected);
@@ -550,6 +581,13 @@
       this.card.style.display = 'none';
       this.anchor = null;
       if (this.h.onHide) this.h.onHide();
+    }
+
+    /** Removes the tooltip from the page for good; used when a newer copy takes over. */
+    destroy() {
+      this.visible = false;
+      clearTimeout(this._toastTimer);
+      if (this.host.parentNode) this.host.parentNode.removeChild(this.host);
     }
 
     /** True when the event target is inside this tooltip (shadow DOM aware). */

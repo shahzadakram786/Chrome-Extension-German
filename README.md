@@ -71,7 +71,7 @@ language your provider does not cover still translates.
 | <kbd>Alt</kbd>+<kbd>T</kbd> | translate the selection |
 | <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd> | immersion mode on this page |
 | <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> | turn the extension on or off |
-| <kbd>S</kbd> <kbd>P</kbd> <kbd>G</kbd> <kbd>W</kbd> <kbd>C</kbd> <kbd>Esc</kbd> | with the tooltip open: save · play · grammar · flip direction · copy · close |
+| <kbd>S</kbd> <kbd>P</kbd> <kbd>G</kbd> <kbd>W</kbd> <kbd>R</kbd> <kbd>C</kbd> <kbd>Esc</kbd> | with the tooltip open: save · play · grammar · flip direction · translate again · copy · close |
 | <kbd>Space</kbd> then <kbd>1</kbd>–<kbd>4</kbd> | while reviewing: reveal, then grade |
 
 Rebind any of the first three at `chrome://extensions/shortcuts`.
@@ -80,7 +80,7 @@ Rebind any of the first three at `chrome://extensions/shortcuts`.
 
 ```
 manifest.json
-icons/                           16/32/48/128 PNGs, generated from logo.png
+icons/                           16/32/48/128 PNGs, generated from logo.svg
 src/
   background/service-worker.js   all network access, caching, retries, badge
   content/
@@ -105,6 +105,7 @@ tools/                           development only, never shipped
   fetch-verbs.js                 regenerates src/lib/german-verbs.js
   build.js                       packages dist/<name>-<version>.zip for the store
   frame-screenshots.py           resizes captures to the store's exact dimensions
+  make-icons.py                  renders every icon PNG (and logo.png) from logo.svg
 tests/
   run.js                         unit tests (add --live to call the real APIs)
   german.js                      every conjugation, against forms written out by hand

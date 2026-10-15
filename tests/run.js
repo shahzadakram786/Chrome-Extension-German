@@ -568,6 +568,18 @@ check('derives gender from reliable noun suffixes', () => {
   eq(GL.grammar.germanHint('Kapitalismus').article, 'der', '-ismus');
 });
 
+// The suffixes are checked longest first. In list order, -ing (das) matched
+// before -ling (der) and -ur (die) before -eur (der), so the tooltip taught
+// "das Schmetterling" and "die Friseur".
+check('a longer suffix wins over the shorter one inside it', () => {
+  eq(GL.grammar.germanHint('Schmetterling').article, 'der', '-ling, not -ing');
+  eq(GL.grammar.germanHint('Frühling').article, 'der', '-ling, not -ing');
+  eq(GL.grammar.germanHint('Training').article, 'das', 'plain -ing still das');
+  eq(GL.grammar.germanHint('Friseur').article, 'der', '-eur, not -ur');
+  eq(GL.grammar.germanHint('Natur').article, 'die', 'plain -ur still die');
+  eq(GL.grammar.germanHint('Dokument').article, 'das', '-ment, not -ent');
+});
+
 check('stays quiet when it does not know', () => {
   eq(GL.grammar.germanHint('Haus'), null, 'no suffix rule covers Haus');
   eq(GL.grammar.germanHint('ist'), null, 'too short');
@@ -664,6 +676,41 @@ async function storeTests() {
 
   check('today() formats a local calendar day', () => {
     eq(GL.store.today(new Date(2026, 8, 5)), '2026-09-05', 'zero padded');
+  });
+
+  // Immersion mode translates a page in parallel batches, and every lookup
+  // bumps today's counter. Each bump reads, adds one and writes back, so
+  // unqueued they all read the same number and most of the counts vanish.
+  const before = (await GL.store.getStats()).days[GL.store.today()].lookups || 0;
+  await Promise.all(Array.from({ length: 5 }, () => GL.store.bump('lookups')));
+  const after = (await GL.store.getStats()).days[GL.store.today()].lookups || 0;
+  check('simultaneous bumps all count', () => {
+    eq(after - before, 5);
+  });
+
+  await Promise.all([
+    GL.store.addCard({ term: 'Baum', translation: 'tree', source: 'de', target: 'en' }),
+    GL.store.addCard({ term: 'Hund', translation: 'dog', source: 'de', target: 'en' })
+  ]);
+  deck = await GL.store.getDeck();
+  check('two words saved at the same moment are both kept', () => {
+    ok(deck.some((c) => c.term === 'Baum'), 'Baum kept');
+    ok(deck.some((c) => c.term === 'Hund'), 'Hund kept');
+  });
+
+  // A review grades one card while a save adds another. Both go through the
+  // same read-modify-write path, so neither may overwrite the other.
+  const target = deck.find((c) => c.term === 'Baum');
+  await Promise.all([
+    GL.store.updateDeck((cards) =>
+      cards.map((c) => (c.id === target.id ? Object.assign({}, c, { reps: 42 }) : c))
+    ),
+    GL.store.addCard({ term: 'Katze', translation: 'cat', source: 'de', target: 'en' })
+  ]);
+  deck = await GL.store.getDeck();
+  check('a review and a save at the same moment both land', () => {
+    eq(deck.find((c) => c.term === 'Baum').reps, 42, 'review kept');
+    ok(deck.some((c) => c.term === 'Katze'), 'saved word kept');
   });
 }
 
